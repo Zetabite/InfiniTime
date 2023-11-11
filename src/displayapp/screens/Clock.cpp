@@ -89,12 +89,12 @@ std::unique_ptr<Screen> Clock::WatchFaceDigitalScreen() {
 
 std::unique_ptr<Screen> Clock::WatchFaceBinaryScreen() {
   return std::make_unique<Screens::WatchFaceBinary>(dateTimeController,
-                                                     batteryController,
-                                                     bleController,
-                                                     notificationManager,
-                                                     settingsController,
-                                                     heartRateController,
-                                                     motionController);
+                                                    batteryController,
+                                                    bleController,
+                                                    notificationManager,
+                                                    settingsController,
+                                                    heartRateController,
+                                                    motionController);
 }
 
 std::unique_ptr<Screen> Clock::WatchFaceAnalogScreen() {
