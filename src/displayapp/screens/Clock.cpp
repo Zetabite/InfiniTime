@@ -11,6 +11,7 @@
 #include "displayapp/screens/WatchFaceTerminal.h"
 #include "displayapp/screens/WatchFaceInfineat.h"
 #include "displayapp/screens/WatchFaceBinary.h"
+#include "displayapp/screens/WatchFaceBinaryBCD.h"
 #include "displayapp/screens/WatchFaceAnalog.h"
 #include "displayapp/screens/WatchFacePineTimeStyle.h"
 #include "displayapp/screens/WatchFaceCasioStyleG7710.h"
@@ -87,6 +88,7 @@ std::unique_ptr<Screen> Clock::WatchFaceDigitalScreen() {
                                                      motionController);
 }
 
+#if BINARY_WATCH_FACE_SELECTED == 0
 std::unique_ptr<Screen> Clock::WatchFaceBinaryScreen() {
   return std::make_unique<Screens::WatchFaceBinary>(dateTimeController,
                                                     batteryController,
@@ -96,6 +98,17 @@ std::unique_ptr<Screen> Clock::WatchFaceBinaryScreen() {
                                                     heartRateController,
                                                     motionController);
 }
+#elif BINARY_WATCH_FACE_SELECTED == 1
+std::unique_ptr<Screen> Clock::WatchFaceBinaryScreen() {
+  return std::make_unique<Screens::WatchFaceBinaryBCD>(dateTimeController,
+                                                    batteryController,
+                                                    bleController,
+                                                    notificationManager,
+                                                    settingsController,
+                                                    heartRateController,
+                                                    motionController);
+}
+#endif
 
 std::unique_ptr<Screen> Clock::WatchFaceAnalogScreen() {
   return std::make_unique<Screens::WatchFaceAnalog>(dateTimeController,

@@ -431,6 +431,7 @@ list(APPEND SOURCE_FILES
         displayapp/screens/WatchFaceAnalog.cpp
         displayapp/screens/WatchFaceDigital.cpp
         displayapp/screens/WatchFaceBinary.cpp
+        displayapp/screens/WatchFaceBinaryBCD.cpp
         displayapp/screens/WatchFaceInfineat.cpp
         displayapp/screens/WatchFaceTerminal.cpp
         displayapp/screens/WatchFacePineTimeStyle.cpp

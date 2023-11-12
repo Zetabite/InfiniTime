@@ -24,16 +24,16 @@ namespace Pinetime {
   namespace Applications {
     namespace Screens {
 
-      class WatchFaceBinary : public Screen {
+      class WatchFaceBinaryBCD : public Screen {
       public:
-        WatchFaceBinary(Controllers::DateTime& dateTimeController,
+        WatchFaceBinaryBCD(Controllers::DateTime& dateTimeController,
                         const Controllers::Battery& batteryController,
                         const Controllers::Ble& bleController,
                         Controllers::NotificationManager& notificationManager,
                         Controllers::Settings& settingsController,
                         Controllers::HeartRateController& heartRateController,
                         Controllers::MotionController& motionController);
-        ~WatchFaceBinary() override;
+        ~WatchFaceBinaryBCD() override;
 
         void Refresh() override;
 
@@ -64,10 +64,10 @@ namespace Pinetime {
         lv_obj_t* lableDate;
         lv_obj_t* labelAM;
         lv_obj_t* labelPM;
-        lv_obj_t* hourPoints[5];
-        lv_obj_t* minutePoints[6];
+        lv_obj_t* hourPoints[6];
+        lv_obj_t* minutePoints[7];
 #if BINARY_SECONDS_ENABLED
-        lv_obj_t* secondPoints[6];
+        lv_obj_t* secondPoints[7];
 #endif
 
         Controllers::DateTime& dateTimeController;
