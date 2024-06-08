@@ -17,6 +17,7 @@
 */
 #pragma once
 
+#include "lvgl/lvgl.h"
 #include <cstdint>
 #include <string>
 #define min // workaround: nimble's min/max macros conflict with libstdc++
@@ -25,6 +26,11 @@
 #include <host/ble_uuid.h>
 #undef max
 #undef min
+
+#define ALBUM_ART_WIDTH 32
+#define ALBUM_ART_HEIGHT 32
+#define ALBUM_ART_NUM_COLORS 16
+#define ALBUM_ART_DATA_SIZE ((ALBUM_ART_NUM_COLORS * 4) + (ALBUM_ART_WIDTH * ALBUM_ART_HEIGHT)/2)
 
 namespace Pinetime {
   namespace Controllers {
@@ -46,6 +52,10 @@ namespace Pinetime {
 
       std::string getAlbum() const;
 
+      int getAlbumArtHash() const;
+
+      lv_img_dsc_t* getAlbumArtPtr() const;
+
       int getProgress() const;
 
       int getTrackLength() const;
@@ -65,7 +75,7 @@ namespace Pinetime {
       enum MusicStatus { NotPlaying = 0x00, Playing = 0x01 };
 
     private:
-      struct ble_gatt_chr_def characteristicDefinition[14];
+      struct ble_gatt_chr_def characteristicDefinition[18];
       struct ble_gatt_svc_def serviceDefinition[2];
 
       uint16_t eventHandle {};
@@ -73,6 +83,10 @@ namespace Pinetime {
       std::string artistName {"Waiting for"};
       std::string albumName {};
       std::string trackName {"track information.."};
+
+      int albumArtHash {0};
+      lv_img_dsc_t* albumArt;
+      uint8_t albumArtData[ALBUM_ART_DATA_SIZE];
 
       bool playing {false};
 

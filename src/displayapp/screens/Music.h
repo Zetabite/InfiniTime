@@ -42,6 +42,10 @@ namespace Pinetime {
 
         void OnObjectEvent(lv_obj_t* obj, lv_event_t event);
 
+        void EnableAlbumArt();
+
+        void DisableAlbumArt();
+
       private:
         bool OnTouchEvent(TouchEvents event) override;
 
@@ -57,13 +61,16 @@ namespace Pinetime {
         lv_obj_t* txtPlayPause;
 
         lv_obj_t* imgDisc;
-        lv_obj_t* imgDiscAnim;
+        lv_obj_t* albumArt;
         lv_obj_t* txtTrackDuration;
 
         lv_style_t btn_style;
 
         /** For the spinning disc animation */
         bool frameB;
+
+        bool showingAlbumArt = false;
+        bool hasAlbumArt = false;
 
         Pinetime::Controllers::MusicService& musicService;
 
