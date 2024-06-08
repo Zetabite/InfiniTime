@@ -132,9 +132,9 @@ Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
   lv_img_set_src_arr(imgDisc, &disc);
   lv_obj_align(imgDisc, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15, 15);
 
-  imgDiscAnim = lv_img_create(lv_scr_act(), nullptr);
-  lv_img_set_src_arr(imgDiscAnim, &disc_f_1);
-  lv_obj_align(imgDiscAnim, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15 - 32, 15);
+  albumArt = lv_img_create(lv_scr_act(), nullptr);
+  lv_img_set_src_arr(albumArt, &disc_f_1);
+  lv_obj_align(albumArt, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15 - 32, 15);
 
   frameB = false;
 
@@ -147,6 +147,9 @@ Music::~Music() {
   lv_task_del(taskRefresh);
   lv_style_reset(&btn_style);
   lv_obj_clean(lv_scr_act());
+  if (musicService.getAlbumArtPtr() != nullptr) {
+    free(musicService.getAlbumArtPtr());
+  }
 }
 
 void Music::Refresh() {
@@ -181,13 +184,25 @@ void Music::Refresh() {
   if (playing) {
     lv_label_set_text_static(txtPlayPause, Symbols::pause);
     if (xTaskGetTickCount() - 1024 >= lastIncrement) {
-
-      if (frameB) {
-        lv_img_set_src(imgDiscAnim, &disc_f_1);
+      if (0 == musicService.getAlbumArtHash()) {
+        DisableAlbumArt();
       } else {
-        lv_img_set_src(imgDiscAnim, &disc_f_2);
+        EnableAlbumArt();
       }
-      frameB = !frameB;
+
+      if (hasAlbumArt && !showingAlbumArt && musicService.getAlbumArtPtr() != nullptr) {
+        showingAlbumArt = true;
+        lv_img_set_src(albumArt, musicService.getAlbumArtPtr());
+      } else if (!hasAlbumArt && showingAlbumArt) {
+        showingAlbumArt = false;
+      } else if (!hasAlbumArt && !showingAlbumArt) {
+        if (frameB) {
+          lv_img_set_src(albumArt, &disc_f_1);
+        } else {
+          lv_img_set_src(albumArt, &disc_f_2);
+        }
+        frameB = !frameB;
+      }
 
       if (currentPosition >= totalLength) {
         // Let's assume the getTrack finished, paused when the timer ends
@@ -199,6 +214,14 @@ void Music::Refresh() {
   } else {
     lv_label_set_text_static(txtPlayPause, Symbols::play);
   }
+}
+
+void Music::DisableAlbumArt() {
+  hasAlbumArt = false;
+}
+
+void Music::EnableAlbumArt() {
+  hasAlbumArt = true;
 }
 
 void Music::UpdateLength() {

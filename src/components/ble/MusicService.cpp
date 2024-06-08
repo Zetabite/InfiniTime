@@ -45,8 +45,13 @@ namespace {
   constexpr ble_uuid128_t msPlaybackSpeedCharUuid {CharUuid(0x0a, 0x00)};
   constexpr ble_uuid128_t msRepeatCharUuid {CharUuid(0x0b, 0x00)};
   constexpr ble_uuid128_t msShuffleCharUuid {CharUuid(0x0c, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtHashCharUuid {CharUuid(0x0d, 0x00)};
+  // constexpr ble_uuid128_t msAlbumArtDimensionsCharUuid {CharUuid(0x0e, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtFrameCharUuid {CharUuid(0x0e, 0x00)};
+
 
   constexpr uint8_t MaxStringSize {40};
+  constexpr uint16_t MaxAlbumArtDataSize {ALBUM_ART_DATA_SIZE};
 
   int MusicCallback(uint16_t /*conn_handle*/, uint16_t /*attr_handle*/, struct ble_gatt_access_ctxt* ctxt, void* arg) {
     return static_cast<Pinetime::Controllers::MusicService*>(arg)->OnCommand(ctxt);
@@ -107,7 +112,15 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[13] = {0};
+  characteristicDefinition[13] = {.uuid = &msAlbumArtHashCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[14] = {.uuid = &msAlbumArtFrameCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[15] = {0};
 
   serviceDefinition[0] = {.type = BLE_GATT_SVC_TYPE_PRIMARY, .uuid = &msUuid.u, .characteristics = characteristicDefinition};
   serviceDefinition[1] = {0};
@@ -126,7 +139,9 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
   if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
     size_t notifSize = OS_MBUF_PKTLEN(ctxt->om);
     size_t bufferSize = notifSize;
-    if (notifSize > MaxStringSize) {
+    if (notifSize > MaxAlbumArtDataSize) {
+      bufferSize = MaxAlbumArtDataSize;
+    } else if (notifSize > MaxStringSize) {
       bufferSize = MaxStringSize;
     }
 
@@ -172,6 +187,21 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
       tracksTotal = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msPlaybackSpeedCharUuid.u) == 0) {
       playbackSpeed = static_cast<float>(((s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3])) / 100.0f;
+    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtHashCharUuid.u) == 0) {
+      albumArtHash = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
+    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtFrameCharUuid.u) == 0) {
+      for (uint16_t i = 0; i < MaxAlbumArtDataSize; i++) {
+        albumArtData[i] = data[i];
+      }
+      albumArt->data = albumArtData;
+      albumArt->data_size = MaxAlbumArtDataSize;
+      albumArt->header = {
+        LV_IMG_CF_INDEXED_4BIT,
+        0,
+        0,
+        32,
+        32
+      };
     }
   }
   return 0;
@@ -207,6 +237,14 @@ int Pinetime::Controllers::MusicService::getProgress() const {
 
 int Pinetime::Controllers::MusicService::getTrackLength() const {
   return trackLength;
+}
+
+int Pinetime::Controllers::MusicService::getAlbumArtHash() const {
+  return albumArtHash;
+}
+
+lv_img_dsc_t* Pinetime::Controllers::MusicService::getAlbumArtPtr() const {
+  return albumArt;
 }
 
 void Pinetime::Controllers::MusicService::event(char event) {
