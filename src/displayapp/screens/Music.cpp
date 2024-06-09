@@ -23,6 +23,8 @@
 #include "displayapp/icons/music/disc.c"
 #include "displayapp/icons/music/disc_f_1.c"
 #include "displayapp/icons/music/disc_f_2.c"
+#include "Music.h"
+#include "displayapp/LittleVgl.h"
 
 using namespace Pinetime::Applications::Screens;
 
@@ -47,7 +49,7 @@ inline void lv_img_set_src_arr(lv_obj_t* img, const lv_img_dsc_t* src_img) {
  *
  * TODO: Investigate Apple Media Service and AVRCPv1.6 support for seamless integration
  */
-Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
+Music::Music(Pinetime::Components::LittleVgl& lvgl, Pinetime::Controllers::MusicService& music) : lvgl {lvgl}, musicService(music) {
   lv_obj_t* label;
 
   lv_style_init(&btn_style);
@@ -132,13 +134,10 @@ Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
   lv_img_set_src_arr(imgDisc, &disc);
   lv_obj_align(imgDisc, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15, 15);
 
-  albumArt = lv_img_create(lv_scr_act(), nullptr);
-  lv_img_set_src_arr(albumArt, &disc_f_1);
-  lv_obj_align(albumArt, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15 - 32, 15);
-
   frameB = false;
 
   musicService.event(Controllers::MusicService::EVENT_MUSIC_OPEN);
+  musicService.setLvglPtr(lvgl);
 
   taskRefresh = lv_task_create(RefreshTaskCallback, LV_DISP_DEF_REFR_PERIOD, LV_TASK_PRIO_MID, this);
 }
@@ -147,9 +146,6 @@ Music::~Music() {
   lv_task_del(taskRefresh);
   lv_style_reset(&btn_style);
   lv_obj_clean(lv_scr_act());
-  if (musicService.getAlbumArtPtr() != nullptr) {
-    free(musicService.getAlbumArtPtr());
-  }
 }
 
 void Music::Refresh() {
@@ -184,22 +180,17 @@ void Music::Refresh() {
   if (playing) {
     lv_label_set_text_static(txtPlayPause, Symbols::pause);
     if (xTaskGetTickCount() - 1024 >= lastIncrement) {
-      if (0 == musicService.getAlbumArtHash()) {
-        DisableAlbumArt();
+      if (NO_ALBUM_ART_CHECKSUM == musicService.getAlbumArtChecksum()) {
+        hasAlbumArt = false;
       } else {
-        EnableAlbumArt();
+        hasAlbumArt = true;
       }
 
-      if (hasAlbumArt && !showingAlbumArt && musicService.getAlbumArtPtr() != nullptr) {
-        showingAlbumArt = true;
-        lv_img_set_src(albumArt, musicService.getAlbumArtPtr());
-      } else if (!hasAlbumArt && showingAlbumArt) {
-        showingAlbumArt = false;
-      } else if (!hasAlbumArt && !showingAlbumArt) {
+      if (!hasAlbumArt) {
         if (frameB) {
-          lv_img_set_src(albumArt, &disc_f_1);
+          lv_img_set_src(imgDisc, &disc_f_1);
         } else {
-          lv_img_set_src(albumArt, &disc_f_2);
+          lv_img_set_src(imgDisc, &disc_f_2);
         }
         frameB = !frameB;
       }
@@ -214,14 +205,6 @@ void Music::Refresh() {
   } else {
     lv_label_set_text_static(txtPlayPause, Symbols::play);
   }
-}
-
-void Music::DisableAlbumArt() {
-  hasAlbumArt = false;
-}
-
-void Music::EnableAlbumArt() {
-  hasAlbumArt = true;
 }
 
 void Music::UpdateLength() {
@@ -303,4 +286,9 @@ bool Music::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
       return false;
     }
   }
+}
+
+bool Pinetime::Applications::Screens::Music::OnButtonPushed() {
+  musicService.event(Controllers::MusicService::EVENT_MUSIC_CLOSE);
+  return true;
 }
