@@ -18,6 +18,8 @@
 #include "components/ble/MusicService.h"
 #include "components/ble/NimbleController.h"
 #include <cstring>
+#include "MusicService.h"
+#include "displayapp/LittleVgl.h"
 
 namespace {
   // 0000yyxx-78fc-48fe-8e23-433b3a1942d0
@@ -45,13 +47,13 @@ namespace {
   constexpr ble_uuid128_t msPlaybackSpeedCharUuid {CharUuid(0x0a, 0x00)};
   constexpr ble_uuid128_t msRepeatCharUuid {CharUuid(0x0b, 0x00)};
   constexpr ble_uuid128_t msShuffleCharUuid {CharUuid(0x0c, 0x00)};
-  constexpr ble_uuid128_t msAlbumArtHashCharUuid {CharUuid(0x0d, 0x00)};
-  // constexpr ble_uuid128_t msAlbumArtDimensionsCharUuid {CharUuid(0x0e, 0x00)};
-  constexpr ble_uuid128_t msAlbumArtFrameCharUuid {CharUuid(0x0e, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtChecksumCharUuid {CharUuid(0x0d, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtColorPaletteCharUuid {CharUuid(0x0e, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtFrameEntryCharUuid {CharUuid(0x0f, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtFrameEndCharUuid {CharUuid(0x10, 0x00)};
 
 
-  constexpr uint8_t MaxStringSize {40};
-  constexpr uint16_t MaxAlbumArtDataSize {ALBUM_ART_DATA_SIZE};
+  constexpr uint8_t MaxStringSize {48};
 
   int MusicCallback(uint16_t /*conn_handle*/, uint16_t /*attr_handle*/, struct ble_gatt_access_ctxt* ctxt, void* arg) {
     return static_cast<Pinetime::Controllers::MusicService*>(arg)->OnCommand(ctxt);
@@ -112,15 +114,23 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[13] = {.uuid = &msAlbumArtHashCharUuid.u,
+  characteristicDefinition[13] = {.uuid = &msAlbumArtChecksumCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[14] = {.uuid = &msAlbumArtFrameCharUuid.u,
+  characteristicDefinition[14] = {.uuid = &msAlbumArtColorPaletteCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[15] = {0};
+  characteristicDefinition[15] = {.uuid = &msAlbumArtFrameEntryCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[16] = {.uuid = &msAlbumArtFrameEndCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[17] = {0};
 
   serviceDefinition[0] = {.type = BLE_GATT_SVC_TYPE_PRIMARY, .uuid = &msUuid.u, .characteristics = characteristicDefinition};
   serviceDefinition[1] = {0};
@@ -139,14 +149,37 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
   if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
     size_t notifSize = OS_MBUF_PKTLEN(ctxt->om);
     size_t bufferSize = notifSize;
-    if (notifSize > MaxAlbumArtDataSize) {
-      bufferSize = MaxAlbumArtDataSize;
-    } else if (notifSize > MaxStringSize) {
+    if (notifSize > MaxStringSize) {
       bufferSize = MaxStringSize;
     }
 
     char data[bufferSize + 1];
     os_mbuf_copydata(ctxt->om, 0, bufferSize, data);
+
+    if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtFrameEntryCharUuid.u) == 0) {
+      if (musicAppOpen && acceptAlbumArtData && lvgl != NULL) {
+        for (uint8_t i = 0; i < MaxStringSize; i += 5) {
+          uint16_t x = (data[i] << 8) | data[i + 1];
+          uint16_t y = (data[i + 2] << 8) | (data[i + 3]);
+          uint8_t colorIndex = data[i + 4];
+
+          lv_area_t area;
+          area.x1 = (DISPLAY_WIDTH - ALBUM_ART_WIDTH - 15) + x;
+          area.y1 = 15 + y;
+          area.x2 = area.x1;
+          area.y2 = area.y1;
+
+          lvgl->SetFullRefresh(Components::LittleVgl::FullRefreshDirections::None);
+          lvgl->FlushDisplay(&area, &(indexedColors[colorIndex]));
+        }
+      }
+      return 0;
+    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtColorPaletteCharUuid.u) == 0) {
+      for (uint8_t i = 0; i < ALBUM_ART_NUM_COLORS * 3; i += 3) {
+        indexedColors[i/3] = LV_COLOR_MAKE(data[i + 0], data[i + 1], data[i + 2]);
+      }
+      return 0;
+    }
 
     if (notifSize > bufferSize) {
       data[bufferSize - 1] = '.';
@@ -187,21 +220,12 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
       tracksTotal = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msPlaybackSpeedCharUuid.u) == 0) {
       playbackSpeed = static_cast<float>(((s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3])) / 100.0f;
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtHashCharUuid.u) == 0) {
-      albumArtHash = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtFrameCharUuid.u) == 0) {
-      for (uint16_t i = 0; i < MaxAlbumArtDataSize; i++) {
-        albumArtData[i] = data[i];
+    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtChecksumCharUuid.u) == 0) {
+      uint64_t newAlbumArtChecksum = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
+      acceptAlbumArtData = newAlbumArtChecksum != albumArtChecksum;
+      if (acceptAlbumArtData) {
+        albumArtChecksum = newAlbumArtChecksum;
       }
-      albumArt->data = albumArtData;
-      albumArt->data_size = MaxAlbumArtDataSize;
-      albumArt->header = {
-        LV_IMG_CF_INDEXED_4BIT,
-        0,
-        0,
-        32,
-        32
-      };
     }
   }
   return 0;
@@ -223,6 +247,10 @@ bool Pinetime::Controllers::MusicService::isPlaying() const {
   return playing;
 }
 
+void Pinetime::Controllers::MusicService::setLvglPtr(Pinetime::Components::LittleVgl& newLvgl) {
+  lvgl = &newLvgl;
+}
+
 float Pinetime::Controllers::MusicService::getPlaybackSpeed() const {
   return playbackSpeed;
 }
@@ -239,15 +267,20 @@ int Pinetime::Controllers::MusicService::getTrackLength() const {
   return trackLength;
 }
 
-int Pinetime::Controllers::MusicService::getAlbumArtHash() const {
-  return albumArtHash;
-}
-
-lv_img_dsc_t* Pinetime::Controllers::MusicService::getAlbumArtPtr() const {
-  return albumArt;
+uint64_t Pinetime::Controllers::MusicService::getAlbumArtChecksum() const {
+  return albumArtChecksum;
 }
 
 void Pinetime::Controllers::MusicService::event(char event) {
+  if (event == EVENT_MUSIC_OPEN) {
+    musicAppOpen = true;
+  } else if (event == EVENT_MUSIC_CLOSE) {
+    musicAppOpen = false;
+    albumArtChecksum = NO_ALBUM_ART_CHECKSUM;
+    lvgl = nullptr;
+    return;
+  }
+
   auto* om = ble_hs_mbuf_from_flat(&event, 1);
 
   uint16_t connectionHandle = nimble.connHandle();

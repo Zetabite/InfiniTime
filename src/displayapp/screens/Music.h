@@ -17,6 +17,7 @@
 */
 #pragma once
 
+#include <lvgl/lvgl.h>
 #include <FreeRTOS.h>
 #include <lvgl/src/lv_core/lv_obj.h>
 #include <string>
@@ -26,6 +27,10 @@
 #include "Symbols.h"
 
 namespace Pinetime {
+  namespace Components {
+    class LittleVgl;
+  }
+
   namespace Controllers {
     class MusicService;
   }
@@ -34,7 +39,7 @@ namespace Pinetime {
     namespace Screens {
       class Music : public Screen {
       public:
-        Music(Pinetime::Controllers::MusicService& music);
+        Music(Pinetime::Components::LittleVgl& lvgl, Pinetime::Controllers::MusicService& music);
 
         ~Music() override;
 
@@ -42,12 +47,10 @@ namespace Pinetime {
 
         void OnObjectEvent(lv_obj_t* obj, lv_event_t event);
 
-        void EnableAlbumArt();
-
-        void DisableAlbumArt();
-
       private:
         bool OnTouchEvent(TouchEvents event) override;
+
+        bool OnButtonPushed() override;
 
         void UpdateLength();
 
@@ -61,7 +64,6 @@ namespace Pinetime {
         lv_obj_t* txtPlayPause;
 
         lv_obj_t* imgDisc;
-        lv_obj_t* albumArt;
         lv_obj_t* txtTrackDuration;
 
         lv_style_t btn_style;
@@ -69,8 +71,9 @@ namespace Pinetime {
         /** For the spinning disc animation */
         bool frameB;
 
-        bool showingAlbumArt = false;
         bool hasAlbumArt = false;
+        uint32_t albumArtHash = 0x0;
+        Pinetime::Components::LittleVgl& lvgl;
 
         Pinetime::Controllers::MusicService& musicService;
 
@@ -89,7 +92,7 @@ namespace Pinetime {
 
         lv_task_t* taskRefresh;
 
-        /** Watchapp */
+/** Watchapp */
       };
     }
 
@@ -99,7 +102,7 @@ namespace Pinetime {
       static constexpr const char* icon = Screens::Symbols::music;
 
       static Screens::Screen* Create(AppControllers& controllers) {
-        return new Screens::Music(*controllers.musicService);
+        return new Screens::Music(controllers.lvgl, *controllers.musicService);
       };
     };
   }

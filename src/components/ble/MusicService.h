@@ -27,12 +27,18 @@
 #undef max
 #undef min
 
-#define ALBUM_ART_WIDTH 32
-#define ALBUM_ART_HEIGHT 32
+#define NO_ALBUM_ART_CHECKSUM ((uint64_t) -1)
+#define ALBUM_ART_WIDTH 64
+#define ALBUM_ART_HEIGHT 64
+#define DISPLAY_WIDTH 240
+#define DISPLAY_HEIGHT 240
 #define ALBUM_ART_NUM_COLORS 16
-#define ALBUM_ART_DATA_SIZE ((ALBUM_ART_NUM_COLORS * 4) + (ALBUM_ART_WIDTH * ALBUM_ART_HEIGHT)/2)
 
 namespace Pinetime {
+  namespace Components {
+    class LittleVgl;
+  }
+
   namespace Controllers {
     class NimbleController;
 
@@ -52,9 +58,7 @@ namespace Pinetime {
 
       std::string getAlbum() const;
 
-      int getAlbumArtHash() const;
-
-      lv_img_dsc_t* getAlbumArtPtr() const;
+      uint64_t getAlbumArtChecksum() const;
 
       int getProgress() const;
 
@@ -64,7 +68,10 @@ namespace Pinetime {
 
       bool isPlaying() const;
 
+      void setLvglPtr(Pinetime::Components::LittleVgl& newLvgl);
+
       static const char EVENT_MUSIC_OPEN = 0xe0;
+      static const char EVENT_MUSIC_CLOSE = 0xe1;
       static const char EVENT_MUSIC_PLAY = 0x00;
       static const char EVENT_MUSIC_PAUSE = 0x01;
       static const char EVENT_MUSIC_NEXT = 0x03;
@@ -84,9 +91,11 @@ namespace Pinetime {
       std::string albumName {};
       std::string trackName {"track information.."};
 
-      int albumArtHash {0};
-      lv_img_dsc_t* albumArt;
-      uint8_t albumArtData[ALBUM_ART_DATA_SIZE];
+      uint64_t albumArtChecksum {0};
+      lv_color_t indexedColors[ALBUM_ART_NUM_COLORS];
+      bool acceptAlbumArtData = false;
+      bool musicAppOpen = false;
+      Pinetime::Components::LittleVgl* lvgl = nullptr;
 
       bool playing {false};
 
