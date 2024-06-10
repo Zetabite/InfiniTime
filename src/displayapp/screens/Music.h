@@ -71,8 +71,6 @@ namespace Pinetime {
         /** For the spinning disc animation */
         bool frameB;
 
-        bool hasAlbumArt = false;
-        uint32_t albumArtHash = 0x0;
         Pinetime::Components::LittleVgl& lvgl;
 
         Pinetime::Controllers::MusicService& musicService;
@@ -82,9 +80,9 @@ namespace Pinetime {
         std::string track;
 
         /** Total length in seconds */
-        int totalLength = 0;
+        uint64_t totalLength = 0;
         /** Current position in seconds */
-        int currentPosition;
+        uint64_t currentPosition;
         /** Last time an animation update or timer was incremented */
         TickType_t lastIncrement = 0;
 

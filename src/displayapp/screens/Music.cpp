@@ -181,12 +181,6 @@ void Music::Refresh() {
     lv_label_set_text_static(txtPlayPause, Symbols::pause);
     if (xTaskGetTickCount() - 1024 >= lastIncrement) {
       if (NO_ALBUM_ART_CHECKSUM == musicService.getAlbumArtChecksum()) {
-        hasAlbumArt = false;
-      } else {
-        hasAlbumArt = true;
-      }
-
-      if (!hasAlbumArt) {
         if (frameB) {
           lv_img_set_src(imgDisc, &disc_f_1);
         } else {
@@ -289,6 +283,6 @@ bool Music::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
 }
 
 bool Pinetime::Applications::Screens::Music::OnButtonPushed() {
-  musicService.event(Controllers::MusicService::EVENT_MUSIC_CLOSE);
+  musicService.musicAppClosed();
   return true;
 }
