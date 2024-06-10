@@ -50,8 +50,6 @@ namespace {
   constexpr ble_uuid128_t msAlbumArtChecksumCharUuid {CharUuid(0x0d, 0x00)};
   constexpr ble_uuid128_t msAlbumArtColorPaletteCharUuid {CharUuid(0x0e, 0x00)};
   constexpr ble_uuid128_t msAlbumArtFrameEntryCharUuid {CharUuid(0x0f, 0x00)};
-  constexpr ble_uuid128_t msAlbumArtFrameEndCharUuid {CharUuid(0x10, 0x00)};
-
 
   constexpr uint8_t MaxStringSize {48};
 
@@ -126,11 +124,7 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[16] = {.uuid = &msAlbumArtFrameEndCharUuid.u,
-                                  .access_cb = MusicCallback,
-                                  .arg = this,
-                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[17] = {0};
+  characteristicDefinition[16] = {0};
 
   serviceDefinition[0] = {.type = BLE_GATT_SVC_TYPE_PRIMARY, .uuid = &msUuid.u, .characteristics = characteristicDefinition};
   serviceDefinition[1] = {0};
@@ -157,10 +151,10 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
     os_mbuf_copydata(ctxt->om, 0, bufferSize, data);
 
     if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtFrameEntryCharUuid.u) == 0) {
-      if (musicAppOpen && acceptAlbumArtData && lvgl != NULL) {
+      if (musicAppOpen && acceptAlbumArtData && lvgl != nullptr) {
         for (uint8_t i = 0; i < MaxStringSize; i += 5) {
-          uint16_t x = (data[i] << 8) | data[i + 1];
-          uint16_t y = (data[i + 2] << 8) | (data[i + 3]);
+          uint16_t x = ((data[i] << 8) | data[i + 1]);
+          uint16_t y = ((data[i + 2] << 8) | (data[i + 3]));
           uint8_t colorIndex = data[i + 4];
 
           lv_area_t area;
@@ -221,8 +215,8 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msPlaybackSpeedCharUuid.u) == 0) {
       playbackSpeed = static_cast<float>(((s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3])) / 100.0f;
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtChecksumCharUuid.u) == 0) {
-      uint64_t newAlbumArtChecksum = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
-      acceptAlbumArtData = newAlbumArtChecksum != albumArtChecksum;
+      uint32_t newAlbumArtChecksum = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
+      acceptAlbumArtData = (newAlbumArtChecksum != albumArtChecksum) && musicAppOpen;
       if (acceptAlbumArtData) {
         albumArtChecksum = newAlbumArtChecksum;
       }
@@ -255,15 +249,15 @@ float Pinetime::Controllers::MusicService::getPlaybackSpeed() const {
   return playbackSpeed;
 }
 
-int Pinetime::Controllers::MusicService::getProgress() const {
+uint32_t Pinetime::Controllers::MusicService::getProgress() const {
   if (isPlaying()) {
     return trackProgress +
-           static_cast<int>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+           static_cast<uint32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
   }
   return trackProgress;
 }
 
-int Pinetime::Controllers::MusicService::getTrackLength() const {
+uint32_t Pinetime::Controllers::MusicService::getTrackLength() const {
   return trackLength;
 }
 
@@ -271,15 +265,14 @@ uint64_t Pinetime::Controllers::MusicService::getAlbumArtChecksum() const {
   return albumArtChecksum;
 }
 
+void Pinetime::Controllers::MusicService::musicAppClosed() {
+  musicAppOpen = false;
+  albumArtChecksum = NO_ALBUM_ART_CHECKSUM;
+  lvgl = nullptr;
+}
+
 void Pinetime::Controllers::MusicService::event(char event) {
-  if (event == EVENT_MUSIC_OPEN) {
-    musicAppOpen = true;
-  } else if (event == EVENT_MUSIC_CLOSE) {
-    musicAppOpen = false;
-    albumArtChecksum = NO_ALBUM_ART_CHECKSUM;
-    lvgl = nullptr;
-    return;
-  }
+  if (EVENT_MUSIC_OPEN) musicAppOpen = true;
 
   auto* om = ble_hs_mbuf_from_flat(&event, 1);
 
