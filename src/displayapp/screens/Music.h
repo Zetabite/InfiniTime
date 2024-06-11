@@ -75,10 +75,6 @@ namespace Pinetime {
 
         Pinetime::Controllers::MusicService& musicService;
 
-        std::string artist;
-        std::string album;
-        std::string track;
-
         /** Total length in seconds */
         uint64_t totalLength = 0;
         /** Current position in seconds */
