@@ -47,11 +47,22 @@ namespace {
   constexpr ble_uuid128_t msPlaybackSpeedCharUuid {CharUuid(0x0a, 0x00)};
   constexpr ble_uuid128_t msRepeatCharUuid {CharUuid(0x0b, 0x00)};
   constexpr ble_uuid128_t msShuffleCharUuid {CharUuid(0x0c, 0x00)};
-  constexpr ble_uuid128_t msAlbumArtChecksumCharUuid {CharUuid(0x0d, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtFrameEntryCharUuid {CharUuid(0x0d, 0x00)};
+  
+  #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE and USE_ALBUM_ART_CHECKSUM
+  constexpr ble_uuid128_t msAlbumArtChecksumCharUuid {CharUuid(0x0e, 0x00)};
+  constexpr ble_uuid128_t msAlbumArtColorPaletteCharUuid {CharUuid(0x0f, 0x00)};
+  #elif USE_ALBUM_ART_INDEXED_COLOR_PALETTE and USE_ALBUM_ART_CHECKSUM == 0
   constexpr ble_uuid128_t msAlbumArtColorPaletteCharUuid {CharUuid(0x0e, 0x00)};
-  constexpr ble_uuid128_t msAlbumArtFrameEntryCharUuid {CharUuid(0x0f, 0x00)};
+  #elif USE_ALBUM_ART_INDEXED_COLOR_PALETTE == 0 and USE_ALBUM_ART_CHECKSUM
+  constexpr ble_uuid128_t msAlbumArtChecksumCharUuid {CharUuid(0x0e, 0x00)};
+  #endif
 
+  #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
   constexpr uint8_t MaxStringSize {48};
+  #else
+  constexpr uint8_t MaxStringSize {40};
+  #endif
 
   int MusicCallback(uint16_t /*conn_handle*/, uint16_t /*attr_handle*/, struct ble_gatt_access_ctxt* ctxt, void* arg) {
     return static_cast<Pinetime::Controllers::MusicService*>(arg)->OnCommand(ctxt);
@@ -112,19 +123,35 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[13] = {.uuid = &msAlbumArtChecksumCharUuid.u,
+  characteristicDefinition[13] = {.uuid = &msAlbumArtFrameEntryCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[14] = {.uuid = &msAlbumArtColorPaletteCharUuid.u,
+  #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE and USE_ALBUM_ART_CHECKSUM
+  characteristicDefinition[14] = {.uuid = &msAlbumArtChecksumCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[15] = {.uuid = &msAlbumArtFrameEntryCharUuid.u,
+  characteristicDefinition[15] = {.uuid = &msAlbumArtColorPaletteCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
   characteristicDefinition[16] = {0};
+  #elif USE_ALBUM_ART_INDEXED_COLOR_PALETTE and USE_ALBUM_ART_CHECKSUM == 0
+  characteristicDefinition[14] = {.uuid = &msAlbumArtColorPaletteCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[15] = {0};
+  #elif USE_ALBUM_ART_INDEXED_COLOR_PALETTE == 0 and USE_ALBUM_ART_CHECKSUM
+  characteristicDefinition[14] = {.uuid = &msAlbumArtChecksumCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[15] = {0};
+  #else
+  characteristicDefinition[14] = {0};
+  #endif
 
   serviceDefinition[0] = {.type = BLE_GATT_SVC_TYPE_PRIMARY, .uuid = &msUuid.u, .characteristics = characteristicDefinition};
   serviceDefinition[1] = {0};
@@ -151,29 +178,39 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
     os_mbuf_copydata(ctxt->om, 0, bufferSize, data);
 
     if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtFrameEntryCharUuid.u) == 0) {
-      if (musicAppOpen && acceptAlbumArtData && lvgl != nullptr) {
+      if ((musicStatus & (MusicStatusMask::MusicAppOpen | MusicStatusMask::AcceptAlbumArt)) && lvgl != nullptr) {
+        musicStatus |= MusicStatusMask::ReceivedAlbumArt;
         for (uint8_t i = 0; i < MaxStringSize; i += 5) {
-          uint16_t x = ((data[i] << 8) | data[i + 1]);
-          uint16_t y = ((data[i + 2] << 8) | (data[i + 3]));
-          uint8_t colorIndex = data[i + 4];
-
           lv_area_t area;
-          area.x1 = (DISPLAY_WIDTH - ALBUM_ART_WIDTH - 15) + x;
-          area.y1 = 15 + y;
+          area.x1 = data[i + 0] + ((DISPLAY_WIDTH - ALBUM_ART_WIDTH - 15));
           area.x2 = area.x1;
+          area.y1 = data[i + 1] + 15;
           area.y2 = area.y1;
 
+          lv_color16_t color;
+          #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
+          color = indexedColors[((uint8_t)(data[i + 2])) 0b11111]
+          #else
+          color.ch.red = (data[i + 2] & 0b11111000) >> 3;
+          color.ch.green_l = (data[i + 3] & 0b11100000) >> 5;
+          color.ch.green_h = (data[i + 2] & 0b00000111) << 3;
+          color.ch.blue = data[i + 3] & 0b00011111;
+          #endif
+
           lvgl->SetFullRefresh(Components::LittleVgl::FullRefreshDirections::None);
-          lvgl->FlushDisplay(&area, &(indexedColors[colorIndex]));
+          lvgl->FlushDisplay(&area, &color);
         }
       }
       return 0;
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtColorPaletteCharUuid.u) == 0) {
+    }
+    #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
+    else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtColorPaletteCharUuid.u) == 0) {
       for (uint8_t i = 0; i < ALBUM_ART_NUM_COLORS * 3; i += 3) {
         indexedColors[i/3] = LV_COLOR_MAKE(data[i + 0], data[i + 1], data[i + 2]);
       }
       return 0;
     }
+    #endif
 
     if (notifSize > bufferSize) {
       data[bufferSize - 1] = '.';
@@ -190,20 +227,21 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumCharUuid.u) == 0) {
       albumName = s;
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msStatusCharUuid.u) == 0) {
-      playing = s[0];
+      musicStatus &= (MusicStatusMask::AcceptAlbumArt | MusicStatusMask::ReceivedAlbumArt | MusicStatusMask::MusicAppOpen) | s[0];
       // These variables need to be updated, because the progress may not be updated immediately,
       // leading to getProgress() returning an incorrect position.
-      if (playing) {
+      if (musicStatus & MusicStatusMask::Playing) {
         trackProgressUpdateTime = xTaskGetTickCount();
       } else {
         trackProgress +=
-          static_cast<int>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+          static_cast<uint32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
       }
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msRepeatCharUuid.u) == 0) {
+    } /*else if (ble_uuid_cmp(ctxt->chr->uuid, &msRepeatCharUuid.u) == 0) {
       repeat = s[0];
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msShuffleCharUuid.u) == 0) {
       shuffle = s[0];
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msPositionCharUuid.u) == 0) {
+    } */
+    else if (ble_uuid_cmp(ctxt->chr->uuid, &msPositionCharUuid.u) == 0) {
       trackProgress = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
       trackProgressUpdateTime = xTaskGetTickCount();
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msTotalLengthCharUuid.u) == 0) {
@@ -214,13 +252,17 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
       tracksTotal = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msPlaybackSpeedCharUuid.u) == 0) {
       playbackSpeed = static_cast<float>(((s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3])) / 100.0f;
-    } else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtChecksumCharUuid.u) == 0) {
+    }
+    #if USE_ALBUM_ART_CHECKSUM
+    else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumArtChecksumCharUuid.u) == 0) {
       uint32_t newAlbumArtChecksum = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
       acceptAlbumArtData = (newAlbumArtChecksum != albumArtChecksum) && musicAppOpen;
       if (acceptAlbumArtData) {
         albumArtChecksum = newAlbumArtChecksum;
+        receivedAlbumArtData = false;
       }
     }
+    #endif
   }
   return 0;
 }
@@ -238,7 +280,7 @@ std::string Pinetime::Controllers::MusicService::getTrack() const {
 }
 
 bool Pinetime::Controllers::MusicService::isPlaying() const {
-  return playing;
+  return musicStatus & MusicStatusMask::Playing;
 }
 
 void Pinetime::Controllers::MusicService::setLvglPtr(Pinetime::Components::LittleVgl& newLvgl) {
@@ -261,18 +303,34 @@ uint32_t Pinetime::Controllers::MusicService::getTrackLength() const {
   return trackLength;
 }
 
-uint64_t Pinetime::Controllers::MusicService::getAlbumArtChecksum() const {
+#if USE_ALBUM_ART_CHECKSUM
+uint32_t Pinetime::Controllers::MusicService::getAlbumArtChecksum() const {
   return albumArtChecksum;
+}
+#endif
+
+bool Pinetime::Controllers::MusicService::didReceiveAlbumArtData() const {
+  return musicStatus & MusicStatusMask::ReceivedAlbumArt;
 }
 
 void Pinetime::Controllers::MusicService::musicAppClosed() {
-  musicAppOpen = false;
+  musicStatus &= MusicStatusMask::Playing | MusicStatusMask::Repeat | MusicStatusMask::Shuffle;
+  #if USE_ALBUM_ART_CHECKSUM
   albumArtChecksum = NO_ALBUM_ART_CHECKSUM;
+  #endif
   lvgl = nullptr;
 }
 
 void Pinetime::Controllers::MusicService::event(char event) {
-  if (EVENT_MUSIC_OPEN) musicAppOpen = true;
+  switch (event) {
+    case EVENT_MUSIC_OPEN: {
+      musicStatus |= MusicStatusMask::MusicAppOpen;
+    } break;
+    case EVENT_MUSIC_PREV:
+    case EVENT_MUSIC_NEXT: {
+      musicStatus &= MusicStatusMask::Playing | MusicStatusMask::Repeat | MusicStatusMask::Shuffle | MusicStatusMask::MusicAppOpen | MusicStatusMask::AcceptAlbumArt;
+    } break;
+  }
 
   auto* om = ble_hs_mbuf_from_flat(&event, 1);
 

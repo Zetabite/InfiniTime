@@ -27,12 +27,21 @@
 #undef max
 #undef min
 
-#define NO_ALBUM_ART_CHECKSUM ((uint64_t) -1)
-#define ALBUM_ART_WIDTH 32
-#define ALBUM_ART_HEIGHT 32
-#define DISPLAY_WIDTH 240
-#define DISPLAY_HEIGHT 240
-#define ALBUM_ART_NUM_COLORS 16
+#define USE_ALBUM_ART_INDEXED_COLOR_PALETTE 0
+#define USE_ALBUM_ART_CHECKSUM 0
+
+#if USE_ALBUM_ART_CHECKSUM
+static constexpr const uint64_t NO_ALBUM_ART_CHECKSUM = ((uint64_t) -1);
+#endif
+
+#if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
+static constexpr const uint8_t ALBUM_ART_NUM_COLORS = 16;
+#endif
+
+static constexpr const uint16_t ALBUM_ART_WIDTH = 64;
+// static constexpr const uint16_t ALBUM_ART_HEIGHT = 64;
+static constexpr const uint16_t DISPLAY_WIDTH = 240;
+// static constexpr const uint16_t DISPLAY_HEIGHT = 240;
 
 namespace Pinetime {
   namespace Components {
@@ -58,10 +67,6 @@ namespace Pinetime {
 
       std::string getAlbum() const;
 
-      uint64_t getAlbumArtChecksum() const;
-
-      void musicAppClosed();
-
       uint32_t getProgress() const;
 
       uint32_t getTrackLength() const;
@@ -70,20 +75,53 @@ namespace Pinetime {
 
       bool isPlaying() const;
 
+      #if USE_ALBUM_ART_CHECKSUM
+      uint32_t getAlbumArtChecksum() const;
+      #endif
+
+      bool didReceiveAlbumArtData() const;
+
+      void musicAppClosed();
+
       void setLvglPtr(Pinetime::Components::LittleVgl& newLvgl);
 
-      static const char EVENT_MUSIC_OPEN = 0xe0;
-      static const char EVENT_MUSIC_PLAY = 0x00;
-      static const char EVENT_MUSIC_PAUSE = 0x01;
-      static const char EVENT_MUSIC_NEXT = 0x03;
-      static const char EVENT_MUSIC_PREV = 0x04;
-      static const char EVENT_MUSIC_VOLUP = 0x05;
-      static const char EVENT_MUSIC_VOLDOWN = 0x06;
+      bool isArtistUpdated();
 
-      enum MusicStatus { NotPlaying = 0x00, Playing = 0x01 };
+      bool isAlbumUpdated();
+
+      bool isTrackUpdated();
+
+      static constexpr const char EVENT_MUSIC_OPEN = 0xe0;
+      static constexpr const char EVENT_MUSIC_PLAY = 0x00;
+      static constexpr const char EVENT_MUSIC_PAUSE = 0x01;
+      static constexpr const char EVENT_MUSIC_NEXT = 0x03;
+      static constexpr const char EVENT_MUSIC_PREV = 0x04;
+      static constexpr const char EVENT_MUSIC_VOLUP = 0x05;
+      static constexpr const char EVENT_MUSIC_VOLDOWN = 0x06;
+
+      enum MusicStatusMask : uint8_t {
+        Playing = 1 << 0,
+        Repeat = 1 << 1,
+        Shuffle = 1 << 2,
+        AcceptAlbumArt = 1 << 3,
+        ReceivedAlbumArt = 1 << 4,
+        MusicAppOpen = 1 << 5
+      };
+
+      /*
+      enum MusicStringMask : uint8_t {
+        Artist = 1 << 0,
+        Album = 1 << 1,
+        Track = 1 << 2
+      };
+      */
 
     private:
+      #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
       struct ble_gatt_chr_def characteristicDefinition[17];
+      #else
+      struct ble_gatt_chr_def characteristicDefinition[15];
+      #endif
       struct ble_gatt_svc_def serviceDefinition[2];
 
       uint16_t eventHandle {};
@@ -92,13 +130,24 @@ namespace Pinetime {
       std::string albumName {};
       std::string trackName {"track information.."};
 
-      uint64_t albumArtChecksum {0};
-      lv_color_t indexedColors[ALBUM_ART_NUM_COLORS];
-      bool acceptAlbumArtData = {false};
-      bool musicAppOpen = {false};
-      Pinetime::Components::LittleVgl* lvgl = nullptr;
+      // uint8_t musicStringsUpdateStatus = MusicStringMask::Artist | MusicStringMask::Album | MusicStringMask::Track;
 
-      bool playing {false};
+      #if USE_ALBUM_ART_CHECKSUM
+      uint32_t albumArtChecksum {0};
+      #endif
+      #if USE_ALBUM_ART_INDEXED_COLOR_PALETTE
+      lv_color_t indexedColors[ALBUM_ART_NUM_COLORS];
+      #endif
+      #if USE_ALBUM_ART_CHECKSUM
+      uint8_t musicStatus {
+        (0 << MusicStatusMask::Playing) | (0 << MusicStatusMask::Repeat) | (0 << MusicStatusMask::Shuffle) | (0 << MusicStatusMask::AcceptAlbumArt) | (0 << MusicStatusMask::ReceivedAlbumArt)
+      };
+      #else
+      uint8_t musicStatus {
+        (0 << MusicStatusMask::Playing) | (0 << MusicStatusMask::Repeat) | (0 << MusicStatusMask::Shuffle) | (1 << MusicStatusMask::AcceptAlbumArt) | (0 << MusicStatusMask::ReceivedAlbumArt)
+      };
+      #endif
+      Pinetime::Components::LittleVgl* lvgl = nullptr;
 
       uint32_t trackProgress {0};
       uint32_t trackLength {0};
@@ -107,9 +156,6 @@ namespace Pinetime {
       TickType_t trackProgressUpdateTime {0};
 
       float playbackSpeed {1.0f};
-
-      bool repeat {false};
-      bool shuffle {false};
 
       NimbleController& nimble;
     };

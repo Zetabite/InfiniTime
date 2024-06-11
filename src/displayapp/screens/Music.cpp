@@ -149,38 +149,18 @@ Music::~Music() {
 }
 
 void Music::Refresh() {
-  if (artist != musicService.getArtist()) {
-    artist = musicService.getArtist();
-    lv_label_set_text(txtArtist, artist.data());
-  }
-
-  if (track != musicService.getTrack()) {
-    track = musicService.getTrack();
-    lv_label_set_text(txtTrack, track.data());
-  }
-
-  if (album != musicService.getAlbum()) {
-    album = musicService.getAlbum();
-  }
-
-  if (playing != musicService.isPlaying()) {
-    playing = musicService.isPlaying();
-  }
-
-  if (currentPosition != musicService.getProgress()) {
-    currentPosition = musicService.getProgress();
-    UpdateLength();
-  }
-
-  if (totalLength != musicService.getTrackLength()) {
-    totalLength = musicService.getTrackLength();
-    UpdateLength();
-  }
+  lv_label_set_text(txtArtist, musicService.getArtist().data());
+  lv_label_set_text(txtTrack, musicService.getTrack().data());
+  // album = musicService.getAlbum();
+  playing = musicService.isPlaying();
+  currentPosition = musicService.getProgress();
+  totalLength = musicService.getTrackLength();
+  UpdateLength();
 
   if (playing) {
     lv_label_set_text_static(txtPlayPause, Symbols::pause);
     if (xTaskGetTickCount() - 1024 >= lastIncrement) {
-      if (NO_ALBUM_ART_CHECKSUM == musicService.getAlbumArtChecksum()) {
+      if (!musicService.didReceiveAlbumArtData()) {
         if (frameB) {
           lv_img_set_src(imgDisc, &disc_f_1);
         } else {
@@ -230,17 +210,17 @@ void Music::OnObjectEvent(lv_obj_t* obj, lv_event_t event) {
     } else if (obj == btnPrev) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_PREV);
     } else if (obj == btnPlayPause) {
-      if (playing == Pinetime::Controllers::MusicService::MusicStatus::Playing) {
+      if (playing) {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PAUSE);
 
         // Let's assume it stops playing instantly
-        playing = Controllers::MusicService::NotPlaying;
+        playing = false;
       } else {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PLAY);
 
         // Let's assume it starts playing instantly
         // TODO: In the future should check for BT connection for better UX
-        playing = Controllers::MusicService::Playing;
+        playing = true;
       }
     } else if (obj == btnNext) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_NEXT);
