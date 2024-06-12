@@ -39,12 +39,14 @@ namespace Pinetime {
       void Reset();
 
       TwiMaster& twiMaster;
-      uint8_t deviceAddress = 0x18;
       struct bma4_dev bma;
       struct bma4_accel_config accel_conf; // Store the device configuration for later reference.
+      DeviceTypes deviceType = DeviceTypes::Unknown;
+
+      uint8_t deviceAddress = 0x18;
+
       bool isOk = false;
       bool isResetOk = false;
-      DeviceTypes deviceType = DeviceTypes::Unknown;
     };
   }
 }

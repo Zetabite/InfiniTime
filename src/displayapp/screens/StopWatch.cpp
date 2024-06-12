@@ -8,12 +8,12 @@ using namespace Pinetime::Applications::Screens;
 namespace {
   TimeSeparated_t convertTicksToTimeSegments(const TickType_t timeElapsed) {
     // Centiseconds
-    const int timeElapsedCentis = timeElapsed * 100 / configTICK_RATE_HZ;
+    const uint16_t timeElapsedCentis = timeElapsed * 100 / configTICK_RATE_HZ;
 
-    const int hundredths = (timeElapsedCentis % 100);
-    const int secs = (timeElapsedCentis / 100) % 60;
-    const int mins = ((timeElapsedCentis / 100) / 60) % 60;
-    const int hours = ((timeElapsedCentis / 100) / 60) / 60;
+    const uint16_t hundredths = (timeElapsedCentis % 100);
+    const uint16_t secs = (timeElapsedCentis / 100) % 60;
+    const uint16_t mins = ((timeElapsedCentis / 100) / 60) % 60;
+    const uint16_t hours = ((timeElapsedCentis / 100) / 60) / 60;
     return TimeSeparated_t {hours, mins, secs, hundredths};
   }
 

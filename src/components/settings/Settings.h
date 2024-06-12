@@ -289,6 +289,8 @@ namespace Pinetime {
       static constexpr uint32_t settingsVersion = 0x0007;
 
       struct SettingsData {
+        uint16_t shakeWakeThreshold = 150;
+
         uint32_t version = settingsVersion;
         uint32_t stepsGoal = 10000;
         uint32_t screenTimeOut = 15000;
@@ -305,21 +307,20 @@ namespace Pinetime {
         WatchFaceInfineat watchFaceInfineat;
 
         std::bitset<5> wakeUpMode {0};
-        uint16_t shakeWakeThreshold = 150;
 
         Controllers::BrightnessController::Levels brightLevel = Controllers::BrightnessController::Levels::Medium;
       };
 
       SettingsData settings;
       bool settingsChanged = false;
-
-      uint8_t appMenu = 0;
-      uint8_t settingsMenu = 0;
-      uint8_t watchFacesMenu = 0;
       /* ble state is intentionally not saved with the other watch settings and initialized
        * to off (false) on every boot because we always want ble to be enabled on startup
        */
       bool bleRadioEnabled = true;
+
+      uint8_t appMenu = 0;
+      uint8_t settingsMenu = 0;
+      uint8_t watchFacesMenu = 0;
 
       void LoadSettingsFromFile();
       void SaveSettingsToFile();

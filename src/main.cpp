@@ -145,8 +145,8 @@ Pinetime::System::SystemTask systemTask(spi,
                                         fs,
                                         touchHandler,
                                         buttonHandler);
-int mallocFailedCount = 0;
-int stackOverflowCount = 0;
+uint16_t mallocFailedCount = 0;
+uint16_t stackOverflowCount = 0;
 extern "C" {
 void vApplicationMallocFailedHook() {
   mallocFailedCount++;

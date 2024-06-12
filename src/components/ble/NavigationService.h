@@ -36,14 +36,11 @@ namespace Pinetime {
       void Init();
 
       int OnCommand(struct ble_gatt_access_ctxt* ctxt);
+      int getProgress();
 
       std::string getFlag();
-
       std::string getNarrative();
-
       std::string getManDist();
-
-      int getProgress();
 
     private:
       struct ble_gatt_chr_def characteristicDefinition[5];

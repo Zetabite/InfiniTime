@@ -52,16 +52,20 @@ namespace Pinetime {
       void PrepareRx(const volatile uint32_t bufferAddress, const volatile size_t size);
 
       NRF_SPIM_Type* spiBaseAddress;
-      uint8_t pinCsn;
 
       SpiMaster::SpiModule spi;
       SpiMaster::Parameters params;
 
-      volatile uint32_t currentBufferAddr = 0;
-      volatile size_t currentBufferSize = 0;
       SemaphoreHandle_t mutex = nullptr;
       static constexpr nrf_ppi_channel_t workaroundPpi = NRF_PPI_CHANNEL0;
+
       bool workaroundActive = false;
+
+      uint8_t pinCsn;
+
+      volatile uint32_t currentBufferAddr = 0;
+
+      volatile size_t currentBufferSize = 0;
     };
   }
 }

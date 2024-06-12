@@ -8,7 +8,7 @@ namespace Pinetime {
   namespace Drivers {
     class TwiMaster {
     public:
-      enum class ErrorCodes { NoError, TransactionFailed };
+      enum class ErrorCodes : uint8_t { NoError, TransactionFailed };
 
       TwiMaster(NRF_TWIM_Type* module, uint32_t frequency, uint8_t pinSda, uint8_t pinScl);
 
@@ -28,14 +28,15 @@ namespace Pinetime {
       NRF_TWIM_Type* twiBaseAddress;
       SemaphoreHandle_t mutex = nullptr;
       NRF_TWIM_Type* module;
+
+      static constexpr uint8_t maxDataSize {16};
+      static constexpr uint8_t registerSize {1};
+      static constexpr uint32_t HwFreezedDelay {161000};
+      uint32_t txStartedCycleCount = 0;
       uint32_t frequency;
       uint8_t pinSda;
       uint8_t pinScl;
-      static constexpr uint8_t maxDataSize {16};
-      static constexpr uint8_t registerSize {1};
       uint8_t internalBuffer[maxDataSize + registerSize];
-      uint32_t txStartedCycleCount = 0;
-      static constexpr uint32_t HwFreezedDelay {161000};
     };
   }
 }

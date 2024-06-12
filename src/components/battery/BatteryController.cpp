@@ -16,24 +16,24 @@ Battery::Battery() {
 }
 
 void Battery::ReadPowerState() {
-  isCharging = (nrf_gpio_pin_read(PinMap::Charging) == 0);
-  isPowerPresent = (nrf_gpio_pin_read(PinMap::PowerPresent) == 0);
+  batteryStatus.charging = nrf_gpio_pin_read(PinMap::Charging) == 0;
+  batteryStatus.powerPresent = nrf_gpio_pin_read(PinMap::PowerPresent) == 0;
 
-  if (isPowerPresent && !isCharging) {
-    isFull = true;
-  } else if (!isPowerPresent) {
-    isFull = false;
+  if (batteryStatus.powerPresent && !batteryStatus.charging) {
+    batteryStatus.full = 1;
+  } else if (!batteryStatus.powerPresent) {
+    batteryStatus.full = 0;
   }
 }
 
 void Battery::MeasureVoltage() {
   ReadPowerState();
 
-  if (isReading) {
+  if (batteryStatus.reading) {
     return;
   }
   // Non blocking read
-  isReading = true;
+  batteryStatus.reading = 1;
   SaadcInit();
 
   nrfx_saadc_sample();
@@ -73,23 +73,41 @@ void Battery::SaadcEventHandler(nrfx_saadc_evt_t const* p_event) {
     // thus adc_voltage = battery_voltage / 2 * gain = battery_voltage / 8
     // reference_voltage is 600mV
     // p_event->data.done.p_buffer[0] = (adc_voltage / reference_voltage) * 1024
-    voltage = p_event->data.done.p_buffer[0] * (8 * 600) / 1024;
+    batteryStatus.voltage = p_event->data.done.p_buffer[0] * (8 * 600) / 1024;
 
     uint8_t newPercent = 100;
-    if (!isFull) {
+    if (!batteryStatus.full) {
       // max. voltage while charging is higher than when discharging
-      newPercent = std::min(approx.GetValue(voltage), isCharging ? uint8_t {99} : uint8_t {100});
+      newPercent = std::min(approx.GetValue(batteryStatus.voltage), batteryStatus.charging ? uint8_t {99} : uint8_t {100});
     }
 
-    if ((isPowerPresent && newPercent > percentRemaining) || (!isPowerPresent && newPercent < percentRemaining) || firstMeasurement) {
-      firstMeasurement = false;
-      percentRemaining = newPercent;
+    if ((batteryStatus.powerPresent && newPercent > batteryStatus.percentRemaining) || (!batteryStatus.powerPresent && newPercent < batteryStatus.percentRemaining) || batteryStatus.firstMeasurement) {
+      batteryStatus.firstMeasurement = 0;
+      batteryStatus.percentRemaining = newPercent;
       systemTask->PushMessage(System::Messages::BatteryPercentageUpdated);
     }
 
     nrfx_saadc_uninit();
-    isReading = false;
+    batteryStatus.reading = 0;
   }
+}
+
+uint8_t Battery::PercentRemaining() const {
+  return batteryStatus.percentRemaining;
+}
+
+uint16_t Battery::Voltage() const {
+  return batteryStatus.voltage;
+}
+
+bool Battery::IsCharging() const {
+  // isCharging will go up and down when fully charged
+  // isFull makes sure this returns false while fully charged.
+  return batteryStatus.charging && !batteryStatus.full;
+}
+
+bool Battery::IsPowerPresent() const {
+  return batteryStatus.powerPresent;
 }
 
 void Battery::Register(Pinetime::System::SystemTask* systemTask) {

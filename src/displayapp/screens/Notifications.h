@@ -77,19 +77,19 @@ namespace Pinetime {
         Modes mode = Modes::Normal;
         std::unique_ptr<NotificationItem> currentItem;
         Pinetime::Controllers::NotificationManager::Notification::Id currentId;
-        bool validDisplay = false;
-        bool afterDismissNextMessageFromAbove = false;
 
         lv_point_t timeoutLinePoints[2] {{0, 1}, {239, 1}};
         lv_obj_t* timeoutLine = nullptr;
         TickType_t timeoutTickCountStart;
 
-        static const TickType_t timeoutLength = pdMS_TO_TICKS(7000);
-        bool interacted = true;
-
-        bool dismissingNotification = false;
-
         lv_task_t* taskRefresh;
+
+        static const TickType_t timeoutLength = pdMS_TO_TICKS(7000);
+
+        bool interacted = true;
+        bool dismissingNotification = false;
+        bool validDisplay = false;
+        bool afterDismissNextMessageFromAbove = false;
       };
     }
   }

@@ -28,17 +28,16 @@ namespace Pinetime {
       private:
         Pinetime::Components::LittleVgl& lvgl;
 
-        const uint8_t ballSize = 16;
-
-        uint16_t paddlePos = 30; // Paddle center
-
-        int16_t ballX = (LV_HOR_RES - ballSize) / 2;
-        int16_t ballY = (LV_VER_RES - ballSize) / 2;
+        static constexpr const uint8_t ballSize = 16;
 
         int8_t dx = 2; // Velocity of the ball in the x_coordinate
         int8_t dy = 3; // Velocity of the ball in the y_coordinate
 
         uint16_t score = 0;
+        uint16_t paddlePos = 30; // Paddle center
+
+        int16_t ballX = (LV_HOR_RES - ballSize) / 2;
+        int16_t ballY = (LV_VER_RES - ballSize) / 2;
 
         lv_obj_t* points;
         lv_obj_t* paddle;

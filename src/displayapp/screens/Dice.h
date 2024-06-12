@@ -27,19 +27,23 @@ namespace Pinetime {
         lv_obj_t* resultTotalLabel;
         lv_obj_t* resultIndividualLabel;
         lv_task_t* refreshTask;
-        bool enableShakeForDice = false;
+        
 
         std::mt19937 gen;
 
         std::array<lv_color_t, 3> resultColors = {LV_COLOR_YELLOW, LV_COLOR_MAGENTA, LV_COLOR_AQUA};
-        uint8_t currentColorIndex;
+        
         void NextColor();
 
         Widgets::Counter nCounter = Widgets::Counter(1, 9, jetbrains_mono_42);
         Widgets::Counter dCounter = Widgets::Counter(2, 99, jetbrains_mono_42);
 
+        bool enableShakeForDice = false;
         bool openingRoll = true;
+
         uint8_t currentRollHysteresis = 0;
+        uint8_t currentColorIndex;
+
         static constexpr uint8_t rollHysteresis = 10;
 
         Controllers::MotorController& motorController;

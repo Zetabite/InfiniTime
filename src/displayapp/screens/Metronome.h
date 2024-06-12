@@ -18,16 +18,19 @@ namespace Pinetime {
         bool OnTouchEvent(TouchEvents event) override;
 
       private:
-        TickType_t startTime = 0;
-        TickType_t tappedTime = 0;
         Controllers::MotorController& motorController;
         System::SystemTask& systemTask;
-        int16_t bpm = 120;
-        uint8_t bpb = 4;
-        uint8_t counter = 1;
 
         bool metronomeStarted = false;
         bool allowExit = false;
+        
+        uint8_t bpb = 4;
+        uint8_t counter = 1;
+
+        int16_t bpm = 120;
+
+        TickType_t startTime = 0;
+        TickType_t tappedTime = 0;
 
         lv_obj_t *bpmArc, *bpmTap, *bpmValue;
         lv_obj_t *bpbDropdown, *currentBpbText;

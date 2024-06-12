@@ -19,14 +19,16 @@ namespace Pinetime {
 
     private:
       const uint8_t* buffer;
-      size_t size;
 
+      size_t size;
       size_t encodedBufferIndex = 0;
-      int y = 0;
+
       uint16_t bp = 0;
       uint16_t foregroundColor = 0xffff;
       uint16_t backgroundColor = 0;
       uint16_t color = backgroundColor;
+
+      int y = 0;
       int processedCount = 0;
     };
   }

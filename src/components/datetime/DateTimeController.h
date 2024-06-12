@@ -15,6 +15,7 @@ namespace Pinetime {
     class DateTime {
     public:
       DateTime(Controllers::Settings& settingsController);
+
       enum class Days : uint8_t { Unknown, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
       enum class Months : uint8_t {
         Unknown,
@@ -32,7 +33,7 @@ namespace Pinetime {
         December
       };
 
-      void SetTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second);
+      void SetTime(uint16_t year, uint8_t month, uint16_t day, uint8_t hour, uint8_t minute, uint8_t second);
 
       /*
        * setter corresponding to the BLE Set Local Time characteristic.
@@ -55,19 +56,19 @@ namespace Pinetime {
         return static_cast<Months>(localTime.tm_mon + 1);
       }
 
-      uint8_t Day() const {
+      uint16_t Day() const {
         return localTime.tm_mday;
       }
 
       Days DayOfWeek() const {
-        int daysSinceSunday = localTime.tm_wday;
+        uint8_t daysSinceSunday = localTime.tm_wday;
         if (daysSinceSunday == 0) {
           return Days::Sunday;
         }
         return static_cast<Days>(daysSinceSunday);
       }
 
-      int DayOfYear() const {
+      uint16_t DayOfYear() const {
         return localTime.tm_yday + 1;
       }
 
@@ -142,16 +143,19 @@ namespace Pinetime {
 
     private:
       std::tm localTime;
-      int8_t tzOffset = 0;
-      int8_t dstOffset = 0;
 
-      uint32_t previousSystickCounter = 0;
       std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> currentDateTime;
       std::chrono::seconds uptime {0};
+
+      int8_t tzOffset = 0;
+      int8_t dstOffset = 0;
 
       bool isMidnightAlreadyNotified = false;
       bool isHourAlreadyNotified = true;
       bool isHalfHourAlreadyNotified = true;
+
+      uint32_t previousSystickCounter = 0;
+  
       System::SystemTask* systemTask = nullptr;
       Controllers::Settings& settingsController;
     };

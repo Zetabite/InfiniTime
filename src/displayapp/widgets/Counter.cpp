@@ -19,8 +19,8 @@ namespace {
     }
   }
 
-  constexpr int digitCount(int number) {
-    int digitCount = 0;
+  constexpr uint16_t digitCount(int number) {
+    uint16_t digitCount = 0;
     while (number > 0) {
       digitCount++;
       number /= 10;

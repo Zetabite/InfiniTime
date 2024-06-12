@@ -11,7 +11,7 @@ namespace Pinetime {
   namespace Components {
     class LittleVgl {
     public:
-      enum class FullRefreshDirections { None, Up, Down, Left, Right, LeftAnim, RightAnim };
+      enum class FullRefreshDirections : uint8_t { None, Up, Down, Left, Right, LeftAnim, RightAnim };
       LittleVgl(Pinetime::Drivers::St7789& lcd, Pinetime::Controllers::FS& filesystem);
 
       LittleVgl(const LittleVgl&) = delete;
@@ -36,6 +36,14 @@ namespace Pinetime {
       }
 
     private:
+      static constexpr uint8_t nbWriteLines = 4;
+      static constexpr uint16_t totalNbLines = 320;
+      static constexpr uint16_t visibleNbLines = 240;
+
+      static constexpr uint8_t MaxScrollOffset() {
+        return LV_VER_RES_MAX - nbWriteLines;
+      }
+
       void InitDisplay();
       void InitTouchpad();
       void InitFileSystem();
@@ -49,22 +57,16 @@ namespace Pinetime {
 
       lv_disp_drv_t disp_drv;
 
-      bool fullRefresh = false;
-      static constexpr uint8_t nbWriteLines = 4;
-      static constexpr uint16_t totalNbLines = 320;
-      static constexpr uint16_t visibleNbLines = 240;
-
-      static constexpr uint8_t MaxScrollOffset() {
-        return LV_VER_RES_MAX - nbWriteLines;
-      }
-
       FullRefreshDirections scrollDirection = FullRefreshDirections::None;
-      uint16_t writeOffset = 0;
-      uint16_t scrollOffset = 0;
 
       lv_point_t touchPoint = {};
+
       bool tapped = false;
       bool isCancelled = false;
+      bool fullRefresh = false;
+
+      uint16_t writeOffset = 0;
+      uint16_t scrollOffset = 0;
     };
   }
 }

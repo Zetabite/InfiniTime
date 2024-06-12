@@ -73,9 +73,10 @@ Cst816S::TouchInfos Cst816S::GetTouchInfo() {
   uint8_t nbTouchPoints = touchData[touchPointNumIndex] & 0x0f;
   uint8_t xHigh = touchData[touchXHighIndex] & 0x0f;
   uint8_t xLow = touchData[touchXLowIndex];
-  uint16_t x = (xHigh << 8) | xLow;
   uint8_t yHigh = touchData[touchYHighIndex] & 0x0f;
   uint8_t yLow = touchData[touchYLowIndex];
+
+  uint16_t x = (xHigh << 8) | xLow;
   uint16_t y = (yHigh << 8) | yLow;
   Gestures gesture = static_cast<Gestures>(touchData[gestureIndex]);
 

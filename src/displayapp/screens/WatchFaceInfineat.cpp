@@ -28,9 +28,9 @@ namespace {
     nordGreen,
   };
 
-  constexpr int nColors = 7; // must match number of colors in InfineatColors
+  constexpr uint8_t nColors = 7; // must match number of colors in InfineatColors
 
-  constexpr int nLines = WatchFaceInfineat::nLines;
+  constexpr uint8_t nLines = WatchFaceInfineat::nLines;
 
   constexpr std::array<lv_color_t, nLines> orangeColors = {LV_COLOR_MAKE(0xfd, 0x87, 0x2b),
                                                            LV_COLOR_MAKE(0xdb, 0x33, 0x16),
@@ -158,7 +158,7 @@ WatchFaceInfineat::WatchFaceInfineat(Controllers::DateTime& dateTimeController,
   static constexpr lv_style_int_t lineWidths[nLines] = {18, 15, 14, 22, 20, 18, 18, 52, 48};
 
   const std::array<lv_color_t, nLines>* colors = returnColor(static_cast<enum colors>(settingsController.GetInfineatColorIndex()));
-  for (int i = 0; i < nLines; i++) {
+  for (uint8_t i = 0; i < nLines; i++) {
     lines[i] = lv_line_create(lv_scr_act(), nullptr);
     lv_obj_set_style_local_line_width(lines[i], LV_LINE_PART_MAIN, LV_STATE_DEFAULT, lineWidths[i]);
     lv_color_t color = (*colors)[i];
@@ -380,7 +380,7 @@ void WatchFaceInfineat::UpdateSelected(lv_obj_t* object, lv_event_t event) {
     }
     if (object == btnNextColor || object == btnPrevColor) {
       const std::array<lv_color_t, nLines>* colors = returnColor(static_cast<enum colors>(settingsController.GetInfineatColorIndex()));
-      for (int i = 0; i < nLines; i++) {
+      for (uint8_t i = 0; i < nLines; i++) {
         lv_color_t color = (*colors)[i];
         lv_obj_set_style_local_line_color(lines[i], LV_LINE_PART_MAIN, LV_STATE_DEFAULT, color);
       }
@@ -425,7 +425,7 @@ void WatchFaceInfineat::Refresh() {
 
     currentDate = std::chrono::time_point_cast<std::chrono::days>(currentDateTime.Get());
     if (currentDate.IsUpdated()) {
-      uint8_t day = dateTimeController.Day();
+      uint16_t day = dateTimeController.Day();
       Controllers::DateTime::Days dayOfWeek = dateTimeController.DayOfWeek();
       lv_label_set_text_fmt(labelDate, "%s %02d", dateTimeController.DayOfWeekShortToStringLow(dayOfWeek), day);
       lv_obj_realign(labelDate);

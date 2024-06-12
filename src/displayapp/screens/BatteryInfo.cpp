@@ -6,9 +6,8 @@
 using namespace Pinetime::Applications::Screens;
 
 BatteryInfo::BatteryInfo(const Pinetime::Controllers::Battery& batteryController) : batteryController {batteryController} {
-
-  batteryPercent = batteryController.PercentRemaining();
-  batteryVoltage = batteryController.Voltage();
+  uint8_t batteryPercent = batteryController.PercentRemaining();
+  uint16_t batteryVoltage = batteryController.Voltage();
 
   charging_bar = lv_bar_create(lv_scr_act(), nullptr);
   lv_obj_set_size(charging_bar, 200, 15);
@@ -48,9 +47,8 @@ BatteryInfo::~BatteryInfo() {
 }
 
 void BatteryInfo::Refresh() {
-
-  batteryPercent = batteryController.PercentRemaining();
-  batteryVoltage = batteryController.Voltage();
+  uint8_t batteryPercent = batteryController.PercentRemaining();
+  uint16_t batteryVoltage = batteryController.Voltage();
 
   if (batteryController.IsCharging()) {
     lv_obj_set_style_local_bg_color(charging_bar, LV_BAR_PART_INDIC, LV_STATE_DEFAULT, LV_COLOR_RED);

@@ -128,7 +128,7 @@ void WatchFaceDigital::Refresh() {
     currentDate = std::chrono::time_point_cast<std::chrono::days>(currentDateTime.Get());
     if (currentDate.IsUpdated()) {
       uint16_t year = dateTimeController.Year();
-      uint8_t day = dateTimeController.Day();
+      uint16_t day = dateTimeController.Day();
       if (settingsController.GetClockType() == Controllers::Settings::ClockType::H24) {
         lv_label_set_text_fmt(label_date,
                               "%s %d %s %d",

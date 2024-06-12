@@ -28,9 +28,6 @@ namespace Pinetime {
         lv_obj_t* status;
 
         lv_task_t* taskRefresh;
-
-        uint8_t batteryPercent = 0;
-        uint16_t batteryVoltage = 0;
       };
     }
   }
