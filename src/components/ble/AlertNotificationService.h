@@ -22,16 +22,16 @@ namespace Pinetime {
 
     class AlertNotificationService {
     public:
+      enum class IncomingCallResponses : uint8_t { Reject = 0x00, Answer = 0x01, Mute = 0x02 };
+
       AlertNotificationService(Pinetime::System::SystemTask& systemTask, Pinetime::Controllers::NotificationManager& notificationManager);
+
       void Init();
-
-      int OnAlert(struct ble_gatt_access_ctxt* ctxt);
-
       void AcceptIncomingCall();
       void RejectIncomingCall();
       void MuteIncomingCall();
 
-      enum class IncomingCallResponses : uint8_t { Reject = 0x00, Answer = 0x01, Mute = 0x02 };
+      int OnAlert(struct ble_gatt_access_ctxt* ctxt);
 
     private:
       enum class Categories : uint8_t {

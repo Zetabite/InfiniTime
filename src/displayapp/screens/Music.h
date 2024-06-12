@@ -44,15 +44,15 @@ namespace Pinetime {
         ~Music() override;
 
         void Refresh() override;
-
         void OnObjectEvent(lv_obj_t* obj, lv_event_t event);
 
       private:
         bool OnTouchEvent(TouchEvents event) override;
-
         bool OnButtonPushed() override;
-
         void UpdateLength();
+
+        Pinetime::Components::LittleVgl& lvgl;
+        Pinetime::Controllers::MusicService& musicService;
 
         lv_obj_t* btnPrev;
         lv_obj_t* btnPlayPause;
@@ -68,28 +68,23 @@ namespace Pinetime {
 
         lv_style_t btn_style;
 
+        lv_task_t* taskRefresh;
+
         /** For the spinning disc animation */
         bool frameB;
+        bool playing;
 
-        Pinetime::Components::LittleVgl& lvgl;
-
-        Pinetime::Controllers::MusicService& musicService;
+        /** Last time an animation update or timer was incremented */
+        TickType_t lastIncrement = 0;
 
         /** Total length in seconds */
         uint64_t totalLength = 0;
         /** Current position in seconds */
         uint64_t currentPosition;
-        /** Last time an animation update or timer was incremented */
-        TickType_t lastIncrement = 0;
-
-        bool playing;
-
-        lv_task_t* taskRefresh;
-
-/** Watchapp */
       };
     }
 
+/** Watchapp */
     template <>
     struct AppTraits<Apps::Music> {
       static constexpr Apps app = Apps::Music;

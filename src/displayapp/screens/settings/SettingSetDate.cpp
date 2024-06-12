@@ -25,7 +25,7 @@ namespace {
     screen->CheckDay();
   }
 
-  int MaximumDayOfMonth(uint8_t month, uint16_t year) {
+  uint8_t MaximumDayOfMonth(uint8_t month, uint16_t year) {
     switch (month) {
       case 2: {
         // TODO: When we start using C++20, use std::chrono::year::is_leap
@@ -92,9 +92,10 @@ SettingSetDate::~SettingSetDate() {
 }
 
 void SettingSetDate::HandleButtonPress() {
-  const uint16_t yearValue = yearCounter.GetValue();
   const uint8_t monthValue = monthCounter.GetValue();
   const uint8_t dayValue = dayCounter.GetValue();
+  const uint16_t yearValue = yearCounter.GetValue();
+
   NRF_LOG_INFO("Setting date (manually) to %04d-%02d-%02d", yearValue, monthValue, dayValue);
   dateTimeController
     .SetTime(yearValue, monthValue, dayValue, dateTimeController.Hours(), dateTimeController.Minutes(), dateTimeController.Seconds());
@@ -102,6 +103,6 @@ void SettingSetDate::HandleButtonPress() {
 }
 
 void SettingSetDate::CheckDay() {
-  const int maxDay = MaximumDayOfMonth(monthCounter.GetValue(), yearCounter.GetValue());
+  const uint16_t maxDay = MaximumDayOfMonth(monthCounter.GetValue(), yearCounter.GetValue());
   dayCounter.SetMax(maxDay);
 }

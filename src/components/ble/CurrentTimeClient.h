@@ -51,12 +51,14 @@ namespace Pinetime {
       static constexpr ble_uuid16_t currentTimeCharacteristicUuid {.u {.type = BLE_UUID_TYPE_16}, .value = currentTimeCharacteristicId};
 
       DateTime& dateTimeController;
+
       bool isDiscovered = false;
+      bool isCharacteristicDiscovered = false;
+
       uint16_t ctsStartHandle;
       uint16_t ctsEndHandle;
-
-      bool isCharacteristicDiscovered = false;
       uint16_t currentTimeHandle;
+
       std::function<void(uint16_t)> onServiceDiscovered;
     };
   }

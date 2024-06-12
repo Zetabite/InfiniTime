@@ -11,9 +11,9 @@
 using namespace Pinetime::Applications::Screens;
 
 namespace {
-  constexpr int16_t HourLength = 70;
-  constexpr int16_t MinuteLength = 90;
-  constexpr int16_t SecondLength = 110;
+  constexpr uint8_t HourLength = 70;
+  constexpr uint8_t MinuteLength = 90;
+  constexpr uint8_t SecondLength = 110;
 
   // sin(90) = 1 so the value of _lv_trigo_sin(90) is the scaling factor
   const auto LV_TRIG_SCALE = _lv_trigo_sin(90);

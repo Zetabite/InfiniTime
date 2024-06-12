@@ -9,7 +9,7 @@ namespace Pinetime {
   namespace Controllers {
     class NotificationManager {
     public:
-      enum class Categories {
+      enum class Categories : uint8_t {
         Unknown,
         SimpleAlert,
         Email,
@@ -22,6 +22,7 @@ namespace Pinetime {
         HighProriotyAlert,
         InstantMessage
       };
+
       static constexpr uint8_t MessageSize {100};
 
       struct Notification {

@@ -26,8 +26,8 @@ namespace Pinetime {
         Controllers::Settings& settingsController;
         Controllers::MotionController& motionController;
         System::SystemTask& systemTask;
-        uint8_t calibrating;
         bool EnableForCal;
+        uint8_t calibrating;
         uint32_t vDecay, vCalTime;
         lv_obj_t *positionArc, *animArc, *calButton, *calLabel;
         lv_task_t* refreshTask;

@@ -24,7 +24,7 @@ namespace Pinetime {
 
       class WatchFaceInfineat : public Screen {
       public:
-        static constexpr int nLines = 9;
+        static constexpr uint8_t nLines = 9;
         WatchFaceInfineat(Controllers::DateTime& dateTimeController,
                           const Controllers::Battery& batteryController,
                           const Controllers::Ble& bleController,

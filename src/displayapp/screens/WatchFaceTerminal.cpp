@@ -129,7 +129,7 @@ void WatchFaceTerminal::Refresh() {
     if (currentDate.IsUpdated()) {
       uint16_t year = dateTimeController.Year();
       Controllers::DateTime::Months month = dateTimeController.Month();
-      uint8_t day = dateTimeController.Day();
+      uint16_t day = dateTimeController.Day();
       lv_label_set_text_fmt(label_date, "[DATE]#007fff %04d-%02d-%02d#", short(year), char(month), char(day));
     }
   }

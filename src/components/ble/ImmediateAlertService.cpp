@@ -56,7 +56,7 @@ void ImmediateAlertService::Init() {
   ASSERT(res == 0);
 }
 
-int ImmediateAlertService::OnAlertLevelChanged(uint16_t attributeHandle, ble_gatt_access_ctxt* context) {
+uint8_t ImmediateAlertService::OnAlertLevelChanged(uint16_t attributeHandle, ble_gatt_access_ctxt* context) {
   if (attributeHandle == alertLevelHandle) {
     if (context->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
       auto alertLevel = static_cast<Levels>(context->om->om_data[0]);

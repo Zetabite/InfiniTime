@@ -7,8 +7,8 @@ namespace Pinetime {
     class TouchHandler {
     public:
       struct TouchPoint {
-        int x;
-        int y;
+        uint16_t x;
+        uint16_t y;
         bool touching;
       };
 
@@ -18,11 +18,11 @@ namespace Pinetime {
         return currentTouchPoint.touching;
       }
 
-      uint8_t GetX() const {
+      uint16_t GetX() const {
         return currentTouchPoint.x;
       }
 
-      uint8_t GetY() const {
+      uint16_t GetY() const {
         return currentTouchPoint.y;
       }
 

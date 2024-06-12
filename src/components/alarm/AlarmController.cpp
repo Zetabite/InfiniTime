@@ -105,3 +105,23 @@ void AlarmController::StopAlerting() {
     ScheduleAlarm();
   }
 }
+
+uint8_t AlarmController::Hours() const {
+  return hours;
+}
+
+uint8_t AlarmController::Minutes() const {
+  return minutes;
+}
+
+AlarmController::AlarmState AlarmController::State() const {
+  return state;
+}
+
+AlarmController::RecurType AlarmController::Recurrence() const {
+  return recurrence;
+}
+
+void AlarmController::SetRecurrence(RecurType recurType) {
+  recurrence = recurType;
+}

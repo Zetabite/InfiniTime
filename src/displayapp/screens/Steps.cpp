@@ -26,7 +26,7 @@ Steps::Steps(Controllers::MotionController& motionController, Controllers::Setti
   lv_obj_align(stepsArc, nullptr, LV_ALIGN_CENTER, 0, 0);
 
   stepsCount = motionController.NbSteps();
-  currentTripSteps = stepsCount - motionController.GetTripSteps();
+  uint32_t currentTripSteps = stepsCount - motionController.GetTripSteps();
 
   lv_arc_set_value(stepsArc, int16_t(500 * stepsCount / settingsController.GetStepsGoal()));
 
@@ -73,8 +73,8 @@ Steps::~Steps() {
 }
 
 void Steps::Refresh() {
+  uint32_t currentTripSteps = motionController.GetTripSteps();
   stepsCount = motionController.NbSteps();
-  currentTripSteps = motionController.GetTripSteps();
 
   lv_label_set_text_fmt(lSteps, "%li", stepsCount);
   lv_obj_align(lSteps, nullptr, LV_ALIGN_CENTER, 0, -40);

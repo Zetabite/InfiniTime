@@ -17,7 +17,7 @@ void PageIndicator::Create() {
   lv_obj_set_style_local_line_color(pageIndicatorBase, LV_LINE_PART_MAIN, LV_STATE_DEFAULT, Colors::bgDark);
   lv_line_set_points(pageIndicatorBase, pageIndicatorBasePoints, 2);
 
-  const int16_t indicatorSize = LV_VER_RES / nScreens;
+  const uint8_t indicatorSize = LV_VER_RES / nScreens;
   const int16_t indicatorPos = indicatorSize * nCurrentScreen;
 
   pageIndicatorPoints[0].x = LV_HOR_RES - 1;

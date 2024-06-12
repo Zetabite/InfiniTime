@@ -59,18 +59,18 @@ namespace Pinetime {
       // Stores Imaginary numbers from FFT
       std::array<float, dataLength> vImag;
       // Stores power spectrum calculated from FFT real and imag values
-      std::array<float, (spectrumLength)> spectrum;
+      std::array<float, spectrumLength> spectrum;
       // Stores each new HR value (Hz). Non zero values are averaged for HR output
       std::array<float, 20> dataAverage;
 
+      bool resetSpectralAvg = true;
       uint16_t avgIndex = 0;
       uint16_t spectralAvgCount = 0;
-      float lastPeakLocation = 0.0f;
       uint16_t alsThreshold = UINT16_MAX;
       uint16_t alsValue = 0;
       uint16_t dataIndex = 0;
       float peakLocation;
-      bool resetSpectralAvg = true;
+      float lastPeakLocation = 0.0f;
 
       int ProcessHeartRate(bool init);
       float HeartRateAverage(float hr);

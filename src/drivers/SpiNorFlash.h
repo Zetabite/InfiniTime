@@ -22,16 +22,19 @@ namespace Pinetime {
 
       Identification ReadIdentificaion();
       uint8_t ReadStatusRegister();
+      uint8_t ReadConfigurationRegister();
+      uint8_t ReadSecurityRegister();
+
       bool WriteInProgress();
       bool WriteEnabled();
-      uint8_t ReadConfigurationRegister();
+
+      bool ProgramFailed();
+      bool EraseFailed();
+
       void Read(uint32_t address, uint8_t* buffer, size_t size);
       void Write(uint32_t address, const uint8_t* buffer, size_t size);
       void WriteEnable();
       void SectorErase(uint32_t sectorAddress);
-      uint8_t ReadSecurityRegister();
-      bool ProgramFailed();
-      bool EraseFailed();
 
       void Init();
       void Uninit();

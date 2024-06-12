@@ -18,8 +18,10 @@ namespace Pinetime {
       enum class Levels : uint8_t { NoAlert = 0, MildAlert = 1, HighAlert = 2 };
 
       ImmediateAlertService(Pinetime::System::SystemTask& systemTask, Pinetime::Controllers::NotificationManager& notificationManager);
+
       void Init();
-      int OnAlertLevelChanged(uint16_t attributeHandle, ble_gatt_access_ctxt* context);
+
+      uint8_t OnAlertLevelChanged(uint16_t attributeHandle, ble_gatt_access_ctxt* context);
 
     private:
       Pinetime::System::SystemTask& systemTask;

@@ -76,7 +76,7 @@ SettingSteps::~SettingSteps() {
 void SettingSteps::UpdateSelected(lv_obj_t* object, lv_event_t event) {
   uint32_t value = settingsController.GetStepsGoal();
 
-  int valueChange = 0;
+  uint16_t valueChange = 0;
   if (event == LV_EVENT_SHORT_CLICKED) {
     valueChange = 500;
   } else if (event == LV_EVENT_LONG_PRESSED || event == LV_EVENT_LONG_PRESSED_REPEAT) {
