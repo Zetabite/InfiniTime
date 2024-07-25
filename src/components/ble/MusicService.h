@@ -27,16 +27,10 @@
 #undef max
 #undef min
 
-static constexpr const uint16_t ALBUM_ART_WIDTH = 64;
-// static constexpr const uint16_t ALBUM_ART_HEIGHT = 64;
-static constexpr const uint16_t DISPLAY_WIDTH = 240;
-// static constexpr const uint16_t DISPLAY_HEIGHT = 240;
+// 0 - 256, 0 meaning indexed colors aren't used
+#define NUM_INDEXED_COLORS_ALB_COV 0
 
 namespace Pinetime {
-  namespace Components {
-    class LittleVgl;
-  }
-
   namespace Controllers {
     class NimbleController;
 
@@ -56,19 +50,15 @@ namespace Pinetime {
 
       std::string getAlbum() const;
 
-      uint32_t getProgress() const;
+      int32_t getProgress() const;
 
-      uint32_t getTrackLength() const;
+      int32_t getTrackLength() const;
 
       float getPlaybackSpeed() const;
 
       bool isPlaying() const;
 
-      bool didReceiveAlbumArtData() const;
-
-      void musicAppClosed();
-
-      void setLvglPtr(Pinetime::Components::LittleVgl& newLvgl);
+      bool hasReceivedAlbumCover() const;
 
       static constexpr const char EVENT_MUSIC_OPEN = 0xe0;
       static constexpr const char EVENT_MUSIC_PLAY = 0x00;
@@ -77,17 +67,73 @@ namespace Pinetime {
       static constexpr const char EVENT_MUSIC_PREV = 0x04;
       static constexpr const char EVENT_MUSIC_VOLUP = 0x05;
       static constexpr const char EVENT_MUSIC_VOLDOWN = 0x06;
+      // static constexpr const char EVENT_MUSIC_REQUEST_ALBUM_ART = 0x07;
+
+      // Album Art Sizes
+      static constexpr uint8_t ALB_COV_WIDTH = 64;
+      static constexpr uint8_t ALB_COV_HEIGHT = 64;
+      static constexpr uint16_t ALB_COV_AREA = ALB_COV_WIDTH * ALB_COV_HEIGHT;
+
+      // Album Art Bytes
+      #if NUM_INDEXED_COLORS_ALB_COV
+      static constexpr uint8_t BYTES_PER_COLOR = 4;
+      static constexpr uint16_t COLOR_PALETTE_SIZE = NUM_INDEXED_COLORS_ALB_COV * BYTES_PER_COLOR;
+      static constexpr uint16_t TOTAL_ALB_COV_BYTES = ALB_COV_AREA + COLOR_PALETTE_SIZE;
+      static constexpr uint16_t BYTES_PER_ROW = ALB_COV_WIDTH * BYTES_PER_COLOR;
+      #else
+      static constexpr uint8_t BYTES_PER_COLOR = 2;
+      static constexpr uint16_t TOTAL_ALB_COV_BYTES = ALB_COV_AREA * BYTES_PER_COLOR;
+      static constexpr uint16_t BYTES_PER_ROW = ALB_COV_WIDTH * BYTES_PER_COLOR;
+      #endif
+      
+      // BLE Relevant
+      // Album Art Chunk Info 
+      static constexpr uint8_t BYTES_FOR_CHUNK_DATA_SIZE = 1;
+      static constexpr uint8_t BYTES_FOR_CHUNK_ID = 2;
+      static constexpr uint8_t BYTES_FOR_CHUNK_TYPE = 1;
+      static constexpr uint8_t BYTES_FOR_BITMAP_CHUNK_INFO = BYTES_FOR_CHUNK_DATA_SIZE + BYTES_FOR_CHUNK_ID + BYTES_FOR_CHUNK_TYPE;
+      #if NUM_INDEXED_COLORS_ALB_COV
+      static constexpr uint8_t BYTES_FOR_COLOR_PALETTE_CHUNK_INFO = BYTES_FOR_CHUNK_DATA_SIZE + BYTES_FOR_CHUNK_ID + BYTES_FOR_CHUNK_TYPE;
+      #endif
+
+      // Bytes transmitted
+      static constexpr uint16_t MAX_BYTES_PER_CHUNK = 251;
+      static constexpr uint16_t MAX_BYTES_PER_BITMAP_DATA = MAX_BYTES_PER_CHUNK - BYTES_FOR_BITMAP_CHUNK_INFO;
+
+      lv_img_dsc_t albumCoverImg = {
+        {
+          #if NUM_INDEXED_COLORS_ALB_COV
+          LV_IMG_CF_INDEXED_8BIT,
+          #else
+          LV_IMG_CF_TRUE_COLOR,
+          #endif
+          0,
+          0,
+          ALB_COV_WIDTH,
+          ALB_COV_HEIGHT
+        },
+        TOTAL_ALB_COV_BYTES,
+        albumCoverData
+      };
 
     private:
-      typedef struct {
-        uint32_t playing : 1;
-        uint32_t repeat : 1;
-        uint32_t shuffle : 1;
-        uint32_t receivedAlbumArt : 1;
-        uint32_t musicAppOpen : 1;
-      } MusicStatus;
+      enum AlbumCoverType : uint8_t {
+        UNKNOWN,
+        NO_ALB_COV,
+        STARTING,
+        DONE
+      };
 
+      bool playing = false;
+      bool repeat = false;
+      bool shuffle = false;
+      bool receivedAlbumCover = false;
+
+      #if NUM_INDEXED_COLORS_ALB_COV
+      struct ble_gatt_chr_def characteristicDefinition[16];
+      #else
       struct ble_gatt_chr_def characteristicDefinition[15];
+      #endif
       struct ble_gatt_svc_def serviceDefinition[2];
 
       uint16_t eventHandle {};
@@ -96,22 +142,17 @@ namespace Pinetime {
       std::string albumName {};
       std::string trackName {"track information.."};
 
-      // uint8_t musicStringsUpdateStatus = MusicStringMask::Artist | MusicStringMask::Album | MusicStringMask::Track;
+      int32_t trackProgress {0};
+      int32_t trackLength {0};
+      int32_t trackNumber {};
+      int32_t tracksTotal {};
 
-      MusicStatus musicStatus = {
-        .playing = 0,
-        .repeat = 0,
-        .shuffle = 0,
-        .receivedAlbumArt = 0,
-        .musicAppOpen = 0
-      };
+      // 4 Bytes per color, 256 colors max
+      // uint8_t albCovPalette[4 * 256];
 
-      Pinetime::Components::LittleVgl* lvgl = nullptr;
+      uint8_t albumCoverData[TOTAL_ALB_COV_BYTES];
 
-      uint32_t trackProgress {0};
-      uint32_t trackLength {0};
-      uint32_t trackNumber {};
-      uint32_t tracksTotal {};
+      uint8_t albumCoverChunkInfo[BYTES_FOR_BITMAP_CHUNK_INFO];
 
       TickType_t trackProgressUpdateTime {0};
 

@@ -24,6 +24,7 @@
 #include "displayapp/screens/Screen.h"
 #include "displayapp/apps/Apps.h"
 #include "displayapp/Controllers.h"
+#include "components/ble/MusicService.h"
 #include "Symbols.h"
 
 namespace Pinetime {
@@ -48,8 +49,12 @@ namespace Pinetime {
 
       private:
         bool OnTouchEvent(TouchEvents event) override;
-        bool OnButtonPushed() override;
+
         void UpdateLength();
+        void HideAlbumCover();
+        void UpdateAlbumCover(bool receivedAlbumCover);
+
+        static constexpr int32_t MAX_DISPLAYED_MINUTES = (99 * 60);
 
         Pinetime::Components::LittleVgl& lvgl;
         Pinetime::Controllers::MusicService& musicService;
@@ -61,26 +66,36 @@ namespace Pinetime {
         lv_obj_t* btnVolUp;
         lv_obj_t* txtArtist;
         lv_obj_t* txtTrack;
+        // lv_obj_t* txtAlbum;
         lv_obj_t* txtPlayPause;
 
         lv_obj_t* imgDisc;
+        lv_obj_t* imgDiscAnim;
+        lv_obj_t* imgAlbumCover;
+
         lv_obj_t* txtTrackDuration;
 
         lv_style_t btn_style;
 
         lv_task_t* taskRefresh;
 
+        std::string artist;
+        // std::string album;
+        std::string track;
+
         /** For the spinning disc animation */
         bool frameB;
         bool playing;
+
+        bool showingAlbumCover = false;
 
         /** Last time an animation update or timer was incremented */
         TickType_t lastIncrement = 0;
 
         /** Total length in seconds */
-        uint64_t totalLength = 0;
+        int32_t totalLength;
         /** Current position in seconds */
-        uint64_t currentPosition;
+        int32_t currentPosition;
       };
     }
 
