@@ -28,7 +28,7 @@
 #undef min
 
 // 0 - 256, 0 meaning indexed colors aren't used
-#define NUM_INDEXED_COLORS_ALB_COV 0
+#define NUM_INDEXED_COLORS_ALBUM_COVER 0 // 240
 
 namespace Pinetime {
   namespace Controllers {
@@ -75,11 +75,13 @@ namespace Pinetime {
       static constexpr uint16_t ALB_COV_AREA = ALB_COV_WIDTH * ALB_COV_HEIGHT;
 
       // Album Art Bytes
-      #if NUM_INDEXED_COLORS_ALB_COV
+      #if NUM_INDEXED_COLORS_ALBUM_COVER
       static constexpr uint8_t BYTES_PER_COLOR = 4;
-      static constexpr uint16_t COLOR_PALETTE_SIZE = NUM_INDEXED_COLORS_ALB_COV * BYTES_PER_COLOR;
+      static constexpr uint16_t COLOR_PALETTE_SIZE = NUM_INDEXED_COLORS_ALBUM_COVER * BYTES_PER_COLOR;
       static constexpr uint16_t TOTAL_ALB_COV_BYTES = ALB_COV_AREA + COLOR_PALETTE_SIZE;
       static constexpr uint16_t BYTES_PER_ROW = ALB_COV_WIDTH * BYTES_PER_COLOR;
+      static constexpr uint8_t COLORS_PER_PACKET = 60;
+      static constexpr uint8_t COLOR_PACKET_SIZE = COLORS_PER_PACKET * BYTES_PER_COLOR;
       #else
       static constexpr uint8_t BYTES_PER_COLOR = 2;
       static constexpr uint16_t TOTAL_ALB_COV_BYTES = ALB_COV_AREA * BYTES_PER_COLOR;
@@ -92,8 +94,9 @@ namespace Pinetime {
       static constexpr uint8_t BYTES_FOR_CHUNK_ID = 2;
       static constexpr uint8_t BYTES_FOR_CHUNK_TYPE = 1;
       static constexpr uint8_t BYTES_FOR_BITMAP_CHUNK_INFO = BYTES_FOR_CHUNK_DATA_SIZE + BYTES_FOR_CHUNK_ID + BYTES_FOR_CHUNK_TYPE;
-      #if NUM_INDEXED_COLORS_ALB_COV
-      static constexpr uint8_t BYTES_FOR_COLOR_PALETTE_CHUNK_INFO = BYTES_FOR_CHUNK_DATA_SIZE + BYTES_FOR_CHUNK_ID + BYTES_FOR_CHUNK_TYPE;
+      #if NUM_INDEXED_COLORS_ALBUM_COVER
+      static constexpr uint8_t BYTES_FOR_COLOR_PALETTE_CHUNK_INFO = BYTES_FOR_BITMAP_CHUNK_INFO;
+
       #endif
 
       // Bytes transmitted
@@ -102,7 +105,7 @@ namespace Pinetime {
 
       lv_img_dsc_t albumCoverImg = {
         {
-          #if NUM_INDEXED_COLORS_ALB_COV
+          #if NUM_INDEXED_COLORS_ALBUM_COVER
           LV_IMG_CF_INDEXED_8BIT,
           #else
           LV_IMG_CF_TRUE_COLOR,
@@ -129,7 +132,7 @@ namespace Pinetime {
       bool shuffle = false;
       bool receivedAlbumCover = false;
 
-      #if NUM_INDEXED_COLORS_ALB_COV
+      #if NUM_INDEXED_COLORS_ALBUM_COVER
       struct ble_gatt_chr_def characteristicDefinition[16];
       #else
       struct ble_gatt_chr_def characteristicDefinition[15];
@@ -147,12 +150,12 @@ namespace Pinetime {
       int32_t trackNumber {};
       int32_t tracksTotal {};
 
-      // 4 Bytes per color, 256 colors max
-      // uint8_t albCovPalette[4 * 256];
-
       uint8_t albumCoverData[TOTAL_ALB_COV_BYTES];
 
       uint8_t albumCoverChunkInfo[BYTES_FOR_BITMAP_CHUNK_INFO];
+      #if NUM_INDEXED_COLORS_ALBUM_COVER
+      uint8_t colorPaletteChunkInfo[BYTES_FOR_COLOR_PALETTE_CHUNK_INFO];
+      #endif
 
       TickType_t trackProgressUpdateTime {0};
 
