@@ -47,7 +47,7 @@ namespace {
   constexpr ble_uuid128_t msRepeatCharUuid {CharUuid(0x0b, 0x00)};
   constexpr ble_uuid128_t msShuffleCharUuid {CharUuid(0x0c, 0x00)};
   constexpr ble_uuid128_t msAlbumCoverCharUuid {CharUuid(0x0d, 0x00)};
-  #if NUM_INDEXED_COLORS_ALBUM_ART
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
   constexpr ble_uuid128_t msAlbumCoverPaletteCharUuid {CharUuid(0x0d, 0x00)};
   #endif
 
@@ -116,7 +116,7 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  #if NUM_INDEXED_COLORS_ALBUM_ART
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
   characteristicDefinition[14] = {.uuid = &msAlbumCoverPaletteCharUuid.u,
                                   .access_cb = MusicCallback,
                                   .arg = this,
@@ -142,6 +142,11 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
     }
   }
   */
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
+  for (uint16_t i = 0; i < COLOR_PALETTE_SIZE; i++) {
+    albumCoverData[i] = 0;
+  }
+  #endif
 }
 
 void Pinetime::Controllers::MusicService::Init() {
@@ -167,8 +172,6 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
         return 0;
       }
 
-      // trackName = std::to_string(notifSize) + " | " + std::to_string(bufferSize);
-
       if (0 != os_mbuf_copydata(ctxt->om, 0, BYTES_FOR_BITMAP_CHUNK_INFO, albumCoverChunkInfo)) {
         return 0;
       }
@@ -191,7 +194,33 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
 
       receivedAlbumCover = (albumCoverType == AlbumCoverType::DONE || MAX_BYTES_PER_BITMAP_DATA > dataSize);
       return 0;
+    } 
+    #if NUM_INDEXED_COLORS_ALBUM_COVER
+    else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumCoverPaletteCharUuid.u) == 0) {
+      if (notifSize > MAX_BYTES_PER_CHUNK) {
+        bufferSize = MAX_BYTES_PER_CHUNK;
+      }
+
+      if (bufferSize != MAX_BYTES_PER_CHUNK) {
+        return 0;
+      }
+
+      if (0 != os_mbuf_copydata(ctxt->om, 0, BYTES_FOR_COLOR_PALETTE_CHUNK_INFO, colorPaletteChunkInfo)) {
+        return 0;
+      }
+
+      const uint8_t chunkType = colorPaletteChunkInfo[0];
+
+      if (2 > chunkType || chunkType > 4) {
+        return 0;
+      }
+
+      const uint8_t chunkOffset = colorPaletteChunkInfo[2];
+
+      os_mbuf_copydata(ctxt->om, BYTES_FOR_COLOR_PALETTE_CHUNK_INFO, COLOR_PACKET_SIZE, albumCoverData + chunkOffset * COLOR_PACKET_SIZE);
+      return 0;
     }
+    #endif
 
     if (notifSize > MaxStringSize) {
       bufferSize = MaxStringSize;
