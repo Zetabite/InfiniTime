@@ -228,22 +228,22 @@ void Music::Refresh() {
     lv_label_set_text_static(txtPlayPause, Symbols::play);
   }
 
+  /*
   if ((receivedAlbumCover && !showingAlbumCover) || (!receivedAlbumCover && showingAlbumCover)) {
     UpdateAlbumCover(receivedAlbumCover);
-  }
+    showingAlbumCover = !showingAlbumCover;
+  }*/
+  UpdateAlbumCover(receivedAlbumCover);
 }
 
 void Music::UpdateAlbumCover(bool receivedAlbumCover) {
   lv_obj_set_hidden(imgDisc, receivedAlbumCover);
   lv_obj_set_hidden(imgDiscAnim, receivedAlbumCover);
   lv_obj_set_hidden(imgAlbumCover, !receivedAlbumCover);
-  showingAlbumCover = !showingAlbumCover;
 }
 
 void Music::HideAlbumCover() {
-  lv_obj_set_hidden(imgDisc, false);
-  lv_obj_set_hidden(imgDiscAnim, false);
-  lv_obj_set_hidden(imgAlbumCover, true);
+  UpdateAlbumCover(false);
   showingAlbumCover = false;
 }
 
@@ -283,14 +283,13 @@ void Music::OnObjectEvent(lv_obj_t* obj, lv_event_t event) {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PAUSE);
 
         // Let's assume it stops playing instantly
-        playing = false;
       } else {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PLAY);
 
         // Let's assume it starts playing instantly
         // TODO: In the future should check for BT connection for better UX
-        playing = true;
       }
+      playing = !playing;
     } else if (obj == btnNext) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_NEXT);
       HideAlbumCover();
