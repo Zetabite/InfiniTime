@@ -69,6 +69,9 @@ namespace Pinetime {
       static constexpr const char EVENT_MUSIC_VOLDOWN = 0x06;
       // static constexpr const char EVENT_MUSIC_REQUEST_ALBUM_ART = 0x07;
 
+      // BLE 4.2 Payload Attribute Data = 244, otherwise 20
+      static constexpr uint16_t MAX_BYTES_PER_CHUNK = 244;
+
       // Album Art Sizes
       static constexpr uint8_t ALB_COV_WIDTH = 64;
       static constexpr uint8_t ALB_COV_HEIGHT = 64;
@@ -96,11 +99,9 @@ namespace Pinetime {
       static constexpr uint8_t BYTES_FOR_BITMAP_CHUNK_INFO = BYTES_FOR_CHUNK_DATA_SIZE + BYTES_FOR_CHUNK_ID + BYTES_FOR_CHUNK_TYPE;
       #if NUM_INDEXED_COLORS_ALBUM_COVER
       static constexpr uint8_t BYTES_FOR_COLOR_PALETTE_CHUNK_INFO = BYTES_FOR_BITMAP_CHUNK_INFO;
-
       #endif
 
       // Bytes transmitted
-      static constexpr uint16_t MAX_BYTES_PER_CHUNK = 251;
       static constexpr uint16_t MAX_BYTES_PER_BITMAP_DATA = MAX_BYTES_PER_CHUNK - BYTES_FOR_BITMAP_CHUNK_INFO;
 
       lv_img_dsc_t albumCoverImg = {
@@ -120,6 +121,8 @@ namespace Pinetime {
       };
 
     private:
+      int32_t calcProgress() const;
+
       enum AlbumCoverType : uint8_t {
         UNKNOWN,
         NO_ALB_COV,

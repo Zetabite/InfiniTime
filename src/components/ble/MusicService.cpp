@@ -250,8 +250,7 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
       if (playing) {
         trackProgressUpdateTime = xTaskGetTickCount();
       } else {
-        trackProgress +=
-          static_cast<uint32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+        trackProgress = calcProgress();
       }
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msRepeatCharUuid.u) == 0) {
       repeat = s[0];
@@ -293,10 +292,14 @@ float Pinetime::Controllers::MusicService::getPlaybackSpeed() const {
   return playbackSpeed;
 }
 
+int32_t Pinetime::Controllers::MusicService::calcProgress() const {
+  return trackProgress +
+    static_cast<int32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+}
+
 int32_t Pinetime::Controllers::MusicService::getProgress() const {
   if (playing) {
-    return trackProgress +
-           static_cast<int32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+    return calcProgress();
   }
   return trackProgress;
 }
