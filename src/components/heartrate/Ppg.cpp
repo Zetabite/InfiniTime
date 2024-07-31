@@ -25,8 +25,8 @@ namespace {
   }
 
   float PeakSearch(float* xVals, float* yVals, float threshold, float& width, float start, float end, int length) {
-    int peaks = 0;
     bool enabled = false;
+    uint16_t peaks = 0;
     float minBin = 0.0f;
     float maxBin = 0.0f;
     float peakCenter = 0.0f;
@@ -60,7 +60,7 @@ namespace {
   }
 
   float SpectrumMean(const std::array<float, Ppg::spectrumLength>& signal, int start, int end) {
-    int total = 0;
+    uint16_t total = 0;
     float mean = 0.0f;
     for (int idx = start; idx < end; idx++) {
       mean += signal.at(idx);

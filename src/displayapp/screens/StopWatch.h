@@ -15,13 +15,13 @@ namespace Pinetime {
   namespace Applications {
     namespace Screens {
 
-      enum class States { Init, Running, Halted };
+      enum class States : uint8_t { Init, Running, Halted };
 
       struct TimeSeparated_t {
-        int hours;
-        int mins;
-        int secs;
-        int hundredths;
+        uint16_t hours;
+        uint16_t mins;
+        uint16_t secs;
+        uint16_t hundredths;
       };
 
       class StopWatch : public Screen {
@@ -50,11 +50,11 @@ namespace Pinetime {
         TickType_t blinkTime = 0;
         static constexpr int maxLapCount = 20;
         TickType_t laps[maxLapCount + 1];
-        static constexpr int displayedLaps = 2;
+        static constexpr uint8_t displayedLaps = 2;
+        bool isHoursLabelUpdated = false;
         int lapsDone = 0;
         lv_obj_t *time, *msecTime, *btnPlayPause, *btnStopLap, *txtPlayPause, *txtStopLap;
         lv_obj_t* lapText;
-        bool isHoursLabelUpdated = false;
 
         lv_task_t* taskRefresh;
       };

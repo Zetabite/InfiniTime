@@ -18,6 +18,7 @@
 #include "components/ble/MusicService.h"
 #include "components/ble/NimbleController.h"
 #include <cstring>
+#include "MusicService.h"
 
 namespace {
   // 0000yyxx-78fc-48fe-8e23-433b3a1942d0
@@ -45,6 +46,10 @@ namespace {
   constexpr ble_uuid128_t msPlaybackSpeedCharUuid {CharUuid(0x0a, 0x00)};
   constexpr ble_uuid128_t msRepeatCharUuid {CharUuid(0x0b, 0x00)};
   constexpr ble_uuid128_t msShuffleCharUuid {CharUuid(0x0c, 0x00)};
+  constexpr ble_uuid128_t msAlbumCoverCharUuid {CharUuid(0x0d, 0x00)};
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
+  constexpr ble_uuid128_t msAlbumCoverPaletteCharUuid {CharUuid(0x0d, 0x00)};
+  #endif
 
   constexpr uint8_t MaxStringSize {40};
 
@@ -107,10 +112,41 @@ Pinetime::Controllers::MusicService::MusicService(Pinetime::Controllers::NimbleC
                                   .access_cb = MusicCallback,
                                   .arg = this,
                                   .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
-  characteristicDefinition[13] = {0};
+  characteristicDefinition[13] = {.uuid = &msAlbumCoverCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
+  characteristicDefinition[14] = {.uuid = &msAlbumCoverPaletteCharUuid.u,
+                                  .access_cb = MusicCallback,
+                                  .arg = this,
+                                  .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ};
+  characteristicDefinition[15] = {0};
+  #else
+  characteristicDefinition[14] = {0};
+  #endif
 
   serviceDefinition[0] = {.type = BLE_GATT_SVC_TYPE_PRIMARY, .uuid = &msUuid.u, .characteristics = characteristicDefinition};
   serviceDefinition[1] = {0};
+
+  /*
+  // Test if map is properly created
+  // uint16_t pos = 0;
+  for (uint8_t y = 0; y < Controllers::MusicService::ALBUM_ART_HEIGHT; y++) {
+    for (uint8_t x = 0; x < Controllers::MusicService::ALBUM_ART_WIDTH; x++) {
+      lv_color_t color = LV_COLOR_WHITE;
+      uint16_t pos = x * 2 + y * (Controllers::MusicService::ALBUM_ART_WIDTH * 2);
+      album_art_map[pos] = color.ch.green_l | color.ch.blue << 3;
+      album_art_map[pos + 1] = color.ch.green_h << 3 | color.ch.red;
+      //pos++2;
+    }
+  }
+  */
+  #if NUM_INDEXED_COLORS_ALBUM_COVER
+  for (uint16_t i = 0; i < COLOR_PALETTE_SIZE; i++) {
+    albumCoverData[i] = 0;
+  }
+  #endif
 }
 
 void Pinetime::Controllers::MusicService::Init() {
@@ -126,6 +162,66 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
   if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
     size_t notifSize = OS_MBUF_PKTLEN(ctxt->om);
     size_t bufferSize = notifSize;
+
+    if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumCoverCharUuid.u) == 0) {
+      if (notifSize > MAX_BYTES_PER_CHUNK) {
+        bufferSize = MAX_BYTES_PER_CHUNK;
+      }
+
+      if (bufferSize != MAX_BYTES_PER_CHUNK) {
+        return 0;
+      }
+
+      if (0 != os_mbuf_copydata(ctxt->om, 0, BYTES_FOR_BITMAP_CHUNK_INFO, albumCoverChunkInfo)) {
+        return 0;
+      }
+
+      const uint8_t albumCoverType = albumCoverChunkInfo[0];
+
+      if (2 > albumCoverType || albumCoverType > 4) {
+        return 0;
+      }
+
+      const uint8_t col = albumCoverChunkInfo[1];
+      const uint8_t row = albumCoverChunkInfo[2];
+      uint8_t dataSize = albumCoverChunkInfo[3];
+
+      if (dataSize > MAX_BYTES_PER_BITMAP_DATA) {
+        dataSize = MAX_BYTES_PER_BITMAP_DATA;
+      }
+
+      os_mbuf_copydata(ctxt->om, BYTES_FOR_BITMAP_CHUNK_INFO, dataSize, albumCoverData + row * BYTES_PER_ROW + col * BYTES_PER_COLOR);
+
+      receivedAlbumCover = (albumCoverType == AlbumCoverType::DONE || MAX_BYTES_PER_BITMAP_DATA > dataSize);
+      return 0;
+    } 
+    #if NUM_INDEXED_COLORS_ALBUM_COVER
+    else if (ble_uuid_cmp(ctxt->chr->uuid, &msAlbumCoverPaletteCharUuid.u) == 0) {
+      if (notifSize > MAX_BYTES_PER_CHUNK) {
+        bufferSize = MAX_BYTES_PER_CHUNK;
+      }
+
+      if (bufferSize != MAX_BYTES_PER_CHUNK) {
+        return 0;
+      }
+
+      if (0 != os_mbuf_copydata(ctxt->om, 0, BYTES_FOR_COLOR_PALETTE_CHUNK_INFO, colorPaletteChunkInfo)) {
+        return 0;
+      }
+
+      const uint8_t chunkType = colorPaletteChunkInfo[0];
+
+      if (2 > chunkType || chunkType > 4) {
+        return 0;
+      }
+
+      const uint8_t chunkOffset = colorPaletteChunkInfo[2];
+
+      os_mbuf_copydata(ctxt->om, BYTES_FOR_COLOR_PALETTE_CHUNK_INFO, COLOR_PACKET_SIZE, albumCoverData + chunkOffset * COLOR_PACKET_SIZE);
+      return 0;
+    }
+    #endif
+
     if (notifSize > MaxStringSize) {
       bufferSize = MaxStringSize;
     }
@@ -154,8 +250,7 @@ int Pinetime::Controllers::MusicService::OnCommand(struct ble_gatt_access_ctxt* 
       if (playing) {
         trackProgressUpdateTime = xTaskGetTickCount();
       } else {
-        trackProgress +=
-          static_cast<int>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+        trackProgress = calcProgress();
       }
     } else if (ble_uuid_cmp(ctxt->chr->uuid, &msRepeatCharUuid.u) == 0) {
       repeat = s[0];
@@ -197,19 +292,33 @@ float Pinetime::Controllers::MusicService::getPlaybackSpeed() const {
   return playbackSpeed;
 }
 
-int Pinetime::Controllers::MusicService::getProgress() const {
-  if (isPlaying()) {
-    return trackProgress +
-           static_cast<int>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+int32_t Pinetime::Controllers::MusicService::calcProgress() const {
+  return trackProgress +
+    static_cast<int32_t>((static_cast<float>(xTaskGetTickCount() - trackProgressUpdateTime) / 1024.0f) * getPlaybackSpeed());
+}
+
+int32_t Pinetime::Controllers::MusicService::getProgress() const {
+  if (playing) {
+    return calcProgress();
   }
   return trackProgress;
 }
 
-int Pinetime::Controllers::MusicService::getTrackLength() const {
+int32_t Pinetime::Controllers::MusicService::getTrackLength() const {
   return trackLength;
 }
 
+bool Pinetime::Controllers::MusicService::hasReceivedAlbumCover() const {
+  return receivedAlbumCover;
+}
+
 void Pinetime::Controllers::MusicService::event(char event) {
+  if (EVENT_MUSIC_PREV == event || EVENT_MUSIC_NEXT == event) {
+    receivedAlbumCover = false;
+    trackProgress = 0;
+    trackProgressUpdateTime = xTaskGetTickCount();
+  }
+
   auto* om = ble_hs_mbuf_from_flat(&event, 1);
 
   uint16_t connectionHandle = nimble.connHandle();

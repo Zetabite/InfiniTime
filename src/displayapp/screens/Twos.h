@@ -20,19 +20,19 @@ namespace Pinetime {
         bool OnTouchEvent(TouchEvents event) override;
 
       private:
-        static constexpr int nColors = 5;
+        static constexpr uint8_t nColors = 5;
         lv_style_t cellStyles[nColors];
 
         lv_obj_t* scoreText;
         lv_obj_t* gridDisplay;
-        static constexpr int nCols = 4;
-        static constexpr int nRows = 4;
-        static constexpr int nCells = nCols * nRows;
+        static constexpr uint8_t nCols = 4;
+        static constexpr uint8_t nRows = 4;
+        static constexpr uint8_t nCells = nCols * nRows;
         TwosTile grid[nRows][nCols];
-        unsigned int score = 0;
+        uint32_t score = 0;
         void updateGridDisplay();
-        bool tryMerge(int newRow, int newCol, int oldRow, int oldCol);
-        bool tryMove(int newRow, int newCol, int oldRow, int oldCol);
+        bool tryMerge(int32_t newRow, int32_t newCol, int32_t oldRow, int32_t oldCol);
+        bool tryMove(int32_t newRow, int32_t newCol, int32_t oldRow, int32_t oldCol);
         bool placeNewTile();
       };
     }

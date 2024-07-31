@@ -20,7 +20,7 @@ namespace Pinetime {
         void Refresh() override;
 
       private:
-        enum class States { Idle, Running, Validated, Error };
+        enum class States : uint8_t { Idle, Running, Validated, Error };
         const Pinetime::Controllers::Ble& bleController;
         lv_obj_t* bar1;
         lv_obj_t* percentLabel;

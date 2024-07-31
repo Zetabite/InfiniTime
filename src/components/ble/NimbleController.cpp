@@ -178,7 +178,7 @@ void NimbleController::StartAdvertising() {
   ASSERT(rc == 0);
 }
 
-int NimbleController::OnGAPEvent(ble_gap_event* event) {
+uint8_t NimbleController::OnGAPEvent(ble_gap_event* event) {
   switch (event->type) {
     case BLE_GAP_EVENT_ADV_COMPLETE:
       NRF_LOG_INFO("Advertising event : BLE_GAP_EVENT_ADV_COMPLETE");

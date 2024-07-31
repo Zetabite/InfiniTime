@@ -18,9 +18,9 @@ namespace Pinetime {
       };
 
       struct TouchInfos {
+        Gestures gesture = Gestures::None;
         uint16_t x = 0;
         uint16_t y = 0;
-        Gestures gesture = Gestures::None;
         bool touching = false;
         bool isValid = false;
       };

@@ -248,10 +248,10 @@ void WatchFaceCasioStyleG7710::Refresh() {
     if (currentDate.IsUpdated()) {
       const char* weekNumberFormat = "%V";
 
-      uint16_t year = dateTimeController.Year();
       Controllers::DateTime::Months month = dateTimeController.Month();
-      uint8_t day = dateTimeController.Day();
-      int dayOfYear = dateTimeController.DayOfYear();
+      uint16_t day = dateTimeController.Day();
+      uint16_t year = dateTimeController.Year();
+      uint16_t dayOfYear = dateTimeController.DayOfYear();
       if (settingsController.GetClockType() == Controllers::Settings::ClockType::H24) {
         // 24h mode: ddmmyyyy, first DOW=Monday;
         lv_label_set_text_fmt(label_date, "%3d-%2d", day, month);
@@ -271,7 +271,7 @@ void WatchFaceCasioStyleG7710::Refresh() {
       tm* tmTime = std::localtime(&ttTime);
 
       // TODO: When we start using C++20, use std::chrono::year::is_leap
-      int daysInCurrentYear = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 366 : 365;
+      uint16_t daysInCurrentYear = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 366 : 365;
       uint16_t daysTillEndOfYearNumber = daysInCurrentYear - dayOfYear;
 
       char buffer[8];

@@ -5,7 +5,6 @@
 
 namespace Pinetime {
   namespace Controllers {
-
     class Battery {
     public:
       Battery();
@@ -14,43 +13,44 @@ namespace Pinetime {
       void MeasureVoltage();
       void Register(System::SystemTask* systemTask);
 
-      uint8_t PercentRemaining() const {
-        return percentRemaining;
-      }
+      uint8_t PercentRemaining() const;
 
-      uint16_t Voltage() const {
-        return voltage;
-      }
+      uint16_t Voltage() const;
 
-      bool IsCharging() const {
-        // isCharging will go up and down when fully charged
-        // isFull makes sure this returns false while fully charged.
-        return isCharging && !isFull;
-      }
-
-      bool IsPowerPresent() const {
-        return isPowerPresent;
-      }
+      bool IsCharging() const;
+      bool IsPowerPresent() const;
 
     private:
+      void SaadcInit();
+      void SaadcEventHandler(nrfx_saadc_evt_t const* p_event);
+
+      static void AdcCallbackStatic(nrfx_saadc_evt_t const* event);
+
       static Battery* instance;
       nrf_saadc_value_t saadc_value;
 
       static constexpr nrf_saadc_input_t batteryVoltageAdcInput = NRF_SAADC_INPUT_AIN7;
-      uint16_t voltage = 0;
-      uint8_t percentRemaining = 0;
 
-      bool isFull = false;
-      bool isCharging = false;
-      bool isPowerPresent = false;
-      bool firstMeasurement = true;
+      typedef struct {
+        uint32_t firstMeasurement : 1;
+        uint32_t powerPresent : 1;
+        uint32_t reading : 1;
+        uint32_t charging : 1;
+        uint32_t full : 1;
+        uint32_t : 3;
+        uint32_t percentRemaining : 8;
+        uint32_t voltage : 16;
+      } BatteryStatus;
 
-      void SaadcInit();
-
-      void SaadcEventHandler(nrfx_saadc_evt_t const* p_event);
-      static void AdcCallbackStatic(nrfx_saadc_evt_t const* event);
-
-      bool isReading = false;
+      BatteryStatus batteryStatus = {
+        .firstMeasurement = 1,
+        .powerPresent = 0,
+        .reading = 0,
+        .charging = 0,
+        .full = 0,
+        .percentRemaining = 0,
+        .voltage = 0
+      };
 
       Pinetime::System::SystemTask* systemTask = nullptr;
     };

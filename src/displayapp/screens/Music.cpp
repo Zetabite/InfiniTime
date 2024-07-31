@@ -19,10 +19,11 @@
 #include "displayapp/screens/Symbols.h"
 #include <cstdint>
 #include "displayapp/DisplayApp.h"
-#include "components/ble/MusicService.h"
 #include "displayapp/icons/music/disc.c"
 #include "displayapp/icons/music/disc_f_1.c"
 #include "displayapp/icons/music/disc_f_2.c"
+#include "Music.h"
+#include "displayapp/LittleVgl.h"
 
 using namespace Pinetime::Applications::Screens;
 
@@ -47,7 +48,7 @@ inline void lv_img_set_src_arr(lv_obj_t* img, const lv_img_dsc_t* src_img) {
  *
  * TODO: Investigate Apple Media Service and AVRCPv1.6 support for seamless integration
  */
-Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
+Music::Music(Pinetime::Components::LittleVgl& lvgl, Pinetime::Controllers::MusicService& music) : lvgl {lvgl}, musicService(music) {
   lv_obj_t* label;
 
   lv_style_init(&btn_style);
@@ -111,7 +112,9 @@ Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
 
   constexpr uint8_t FONT_HEIGHT = 12;
   constexpr uint8_t LINE_PAD = 15;
+  // constexpr int8_t MIDDLE_OFFSET = -(25 + FONT_HEIGHT + LINE_PAD);
   constexpr int8_t MIDDLE_OFFSET = -25;
+
   txtArtist = lv_label_create(lv_scr_act(), nullptr);
   lv_label_set_long_mode(txtArtist, LV_LABEL_LONG_SROLL_CIRC);
   lv_obj_align(txtArtist, nullptr, LV_ALIGN_IN_LEFT_MID, 12, MIDDLE_OFFSET + 1 * FONT_HEIGHT);
@@ -122,10 +125,18 @@ Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
   txtTrack = lv_label_create(lv_scr_act(), nullptr);
   lv_label_set_long_mode(txtTrack, LV_LABEL_LONG_SROLL_CIRC);
   lv_obj_align(txtTrack, nullptr, LV_ALIGN_IN_LEFT_MID, 12, MIDDLE_OFFSET + 2 * FONT_HEIGHT + LINE_PAD);
-
   lv_label_set_align(txtTrack, LV_ALIGN_IN_LEFT_MID);
   lv_obj_set_width(txtTrack, LV_HOR_RES - 12);
   lv_label_set_text_static(txtTrack, "This is a very long getTrack name");
+
+  /*
+  txtAlbum = lv_label_create(lv_scr_act(), nullptr);
+  lv_label_set_long_mode(txtAlbum, LV_LABEL_LONG_SROLL_CIRC);
+  lv_obj_align(txtAlbum, nullptr, LV_ALIGN_IN_LEFT_MID, 12, MIDDLE_OFFSET + 3 * FONT_HEIGHT + 2 * LINE_PAD);
+  lv_label_set_align(txtAlbum, LV_ALIGN_IN_LEFT_MID);
+  lv_obj_set_width(txtAlbum, LV_HOR_RES - 12);
+  lv_label_set_text_static(txtAlbum, "Album name");
+  */
 
   /** Init animation */
   imgDisc = lv_img_create(lv_scr_act(), nullptr);
@@ -135,6 +146,11 @@ Music::Music(Pinetime::Controllers::MusicService& music) : musicService(music) {
   imgDiscAnim = lv_img_create(lv_scr_act(), nullptr);
   lv_img_set_src_arr(imgDiscAnim, &disc_f_1);
   lv_obj_align(imgDiscAnim, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15 - 32, 15);
+
+  imgAlbumCover = lv_img_create(lv_scr_act(), nullptr);
+  lv_img_set_src_arr(imgAlbumCover, &(musicService.albumCoverImg));
+  lv_obj_align(imgAlbumCover, nullptr, LV_ALIGN_IN_TOP_RIGHT, -15, 15);
+  lv_obj_set_hidden(imgAlbumCover, true);
 
   frameB = false;
 
@@ -150,6 +166,12 @@ Music::~Music() {
 }
 
 void Music::Refresh() {
+  /*if (musicAppShown != lastMusicAppShown) {
+    musicService.event(Controllers::MusicService::EVENT_MUSIC_REQUEST_ALBUM_ART);
+    musicAppShown = true;
+    lastMusicAppShown = musicAppShown;
+  }*/
+
   if (artist != musicService.getArtist()) {
     artist = musicService.getArtist();
     lv_label_set_text(txtArtist, artist.data());
@@ -160,9 +182,12 @@ void Music::Refresh() {
     lv_label_set_text(txtTrack, track.data());
   }
 
+  /*
   if (album != musicService.getAlbum()) {
     album = musicService.getAlbum();
+    lv_label_set_text(txtAlbum, album.data());
   }
+  */
 
   if (playing != musicService.isPlaying()) {
     playing = musicService.isPlaying();
@@ -178,16 +203,19 @@ void Music::Refresh() {
     UpdateLength();
   }
 
+  const bool receivedAlbumCover = musicService.hasReceivedAlbumCover();
+
   if (playing) {
     lv_label_set_text_static(txtPlayPause, Symbols::pause);
     if (xTaskGetTickCount() - 1024 >= lastIncrement) {
-
-      if (frameB) {
-        lv_img_set_src(imgDiscAnim, &disc_f_1);
-      } else {
-        lv_img_set_src(imgDiscAnim, &disc_f_2);
+      if (!receivedAlbumCover) {
+        if (frameB) {
+          lv_img_set_src(imgDiscAnim, &disc_f_1);
+        } else {
+          lv_img_set_src(imgDiscAnim, &disc_f_2);
+        }
+        frameB = !frameB;
       }
-      frameB = !frameB;
 
       if (currentPosition >= totalLength) {
         // Let's assume the getTrack finished, paused when the timer ends
@@ -199,23 +227,43 @@ void Music::Refresh() {
   } else {
     lv_label_set_text_static(txtPlayPause, Symbols::play);
   }
+
+  /*
+  if ((receivedAlbumCover && !showingAlbumCover) || (!receivedAlbumCover && showingAlbumCover)) {
+    UpdateAlbumCover(receivedAlbumCover);
+    showingAlbumCover = !showingAlbumCover;
+  }*/
+  UpdateAlbumCover(receivedAlbumCover);
+}
+
+void Music::UpdateAlbumCover(bool receivedAlbumCover) {
+  lv_obj_set_hidden(imgDisc, receivedAlbumCover);
+  lv_obj_set_hidden(imgDiscAnim, receivedAlbumCover);
+  lv_obj_set_hidden(imgAlbumCover, !receivedAlbumCover);
+}
+
+void Music::HideAlbumCover() {
+  UpdateAlbumCover(false);
+  showingAlbumCover = false;
 }
 
 void Music::UpdateLength() {
   if (totalLength > (99 * 60 * 60)) {
     lv_label_set_text_static(txtTrackDuration, "Inf/Inf");
   } else if (totalLength > (99 * 60)) {
+    int32_t limitedCurrentPosition = MAX_DISPLAYED_MINUTES < currentPosition ? MAX_DISPLAYED_MINUTES : currentPosition;
     lv_label_set_text_fmt(txtTrackDuration,
                           "%02d:%02d/%02d:%02d",
-                          (currentPosition / (60 * 60)) % 100,
-                          ((currentPosition % (60 * 60)) / 60) % 100,
+                          (limitedCurrentPosition / (60 * 60)) % 100,
+                          ((limitedCurrentPosition % (60 * 60)) / 60) % 100,
                           (totalLength / (60 * 60)) % 100,
                           ((totalLength % (60 * 60)) / 60) % 100);
   } else {
+    int32_t limitedCurrentPosition = totalLength < currentPosition ? totalLength : currentPosition;
     lv_label_set_text_fmt(txtTrackDuration,
                           "%02d:%02d/%02d:%02d",
-                          (currentPosition / 60) % 100,
-                          (currentPosition % 60) % 100,
+                          (limitedCurrentPosition / 60) % 100,
+                          (limitedCurrentPosition % 60) % 100,
                           (totalLength / 60) % 100,
                           (totalLength % 60) % 100);
   }
@@ -229,21 +277,22 @@ void Music::OnObjectEvent(lv_obj_t* obj, lv_event_t event) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_VOLUP);
     } else if (obj == btnPrev) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_PREV);
+      HideAlbumCover();
     } else if (obj == btnPlayPause) {
-      if (playing == Pinetime::Controllers::MusicService::MusicStatus::Playing) {
+      if (playing) {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PAUSE);
 
         // Let's assume it stops playing instantly
-        playing = Controllers::MusicService::NotPlaying;
       } else {
         musicService.event(Controllers::MusicService::EVENT_MUSIC_PLAY);
 
         // Let's assume it starts playing instantly
         // TODO: In the future should check for BT connection for better UX
-        playing = Controllers::MusicService::Playing;
       }
+      playing = !playing;
     } else if (obj == btnNext) {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_NEXT);
+      HideAlbumCover();
     }
   }
 }
@@ -262,6 +311,7 @@ bool Music::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
       if (lv_obj_get_hidden(btnNext)) {
         lv_obj_set_hidden(btnNext, false);
         lv_obj_set_hidden(btnPrev, false);
+
         lv_obj_set_hidden(btnVolDown, true);
         lv_obj_set_hidden(btnVolUp, true);
         return true;
@@ -270,10 +320,12 @@ bool Music::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
     }
     case TouchEvents::SwipeLeft: {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_NEXT);
+      HideAlbumCover();
       return true;
     }
     case TouchEvents::SwipeRight: {
       musicService.event(Controllers::MusicService::EVENT_MUSIC_PREV);
+      HideAlbumCover();
       return true;
     }
     default: {

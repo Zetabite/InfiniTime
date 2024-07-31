@@ -12,7 +12,7 @@ namespace Pinetime {
   namespace Controllers {
     class MotionController {
     public:
-      enum class DeviceTypes {
+      enum class DeviceTypes : uint8_t {
         Unknown,
         BMA421,
         BMA425,
@@ -73,6 +73,8 @@ namespace Pinetime {
       TickType_t lastTime = 0;
       TickType_t time = 0;
 
+      int32_t accumulatedSpeed = 0;
+
       struct AccelStats {
         static constexpr uint8_t numHistory = 2;
 
@@ -96,7 +98,6 @@ namespace Pinetime {
       Utility::CircularBuffer<int16_t, histSize> xHistory = {};
       Utility::CircularBuffer<int16_t, histSize> yHistory = {};
       Utility::CircularBuffer<int16_t, histSize> zHistory = {};
-      int32_t accumulatedSpeed = 0;
 
       DeviceTypes deviceType = DeviceTypes::Unknown;
       Pinetime::Controllers::MotionService* service = nullptr;

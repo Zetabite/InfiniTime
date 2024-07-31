@@ -24,7 +24,7 @@ void HeartRateTask::Process(void* instance) {
 }
 
 void HeartRateTask::Work() {
-  int lastBpm = 0;
+  int32_t lastBpm = 0;
   while (true) {
     Messages msg;
     uint32_t delay;
@@ -71,7 +71,7 @@ void HeartRateTask::Work() {
 
     if (measurementStarted) {
       int8_t ambient = ppg.Preprocess(heartRateSensor.ReadHrs(), heartRateSensor.ReadAls());
-      int bpm = ppg.HeartRate();
+      int32_t bpm = ppg.HeartRate();
 
       // If ambient light detected or a reset requested (bpm < 0)
       if (ambient > 0) {

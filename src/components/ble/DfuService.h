@@ -78,43 +78,6 @@ namespace Pinetime {
       };
 
     private:
-      Pinetime::System::SystemTask& systemTask;
-      Pinetime::Controllers::Ble& bleController;
-      DfuImage dfuImage;
-      NotificationManager notificationManager;
-
-      static constexpr uint16_t dfuServiceId {0x1530};
-      static constexpr uint16_t packetCharacteristicId {0x1532};
-      static constexpr uint16_t controlPointCharacteristicId {0x1531};
-      static constexpr uint16_t revisionCharacteristicId {0x1534};
-
-      uint16_t revision {0x0008};
-
-      static constexpr ble_uuid128_t serviceUuid {
-        .u {.type = BLE_UUID_TYPE_128},
-        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x30, 0x15, 0x00, 0x00}};
-
-      static constexpr ble_uuid128_t packetCharacteristicUuid {
-        .u {.type = BLE_UUID_TYPE_128},
-        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x32, 0x15, 0x00, 0x00}};
-
-      static constexpr ble_uuid128_t controlPointCharacteristicUuid {
-        .u {.type = BLE_UUID_TYPE_128},
-        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x31, 0x15, 0x00, 0x00}};
-
-      static constexpr ble_uuid128_t revisionCharacteristicUuid {
-        .u {.type = BLE_UUID_TYPE_128},
-        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x34, 0x15, 0x00, 0x00}};
-
-      struct ble_gatt_chr_def characteristicDefinition[4];
-      struct ble_gatt_svc_def serviceDefinition[2];
-      uint16_t packetCharacteristicHandle;
-      uint16_t controlPointCharacteristicHandle;
-      uint16_t revisionCharacteristicHandle;
-
-      enum class States : uint8_t { Idle, Init, Start, Data, Validate, Validated };
-      States state = States::Idle;
-
       enum class ImageTypes : uint8_t {
         NoImage = 0x00,
         SoftDevice = 0x01,
@@ -134,7 +97,7 @@ namespace Pinetime {
         PacketReceiptNotification = 0x11
       };
 
-      enum class ErrorCodes {
+      enum class ErrorCodes : uint8_t{
         NoError = 0x01,
         InvalidState = 0x02,
         NotSupported = 0x03,
@@ -143,18 +106,58 @@ namespace Pinetime {
         OperationFailed = 0x06
       };
 
-      uint8_t nbPacketsToNotify = 0;
+      enum class States : uint8_t { Idle, Init, Start, Data, Validate, Validated };
+
+
+      int SendDfuRevision(os_mbuf* om) const;
+      int WritePacketHandler(uint16_t connectionHandle, os_mbuf* om);
+      int ControlPointHandler(uint16_t connectionHandle, os_mbuf* om);
+
+      Pinetime::System::SystemTask& systemTask;
+      Pinetime::Controllers::Ble& bleController;
+      DfuImage dfuImage;
+      NotificationManager notificationManager;
+
+      static constexpr uint16_t dfuServiceId {0x1530};
+      static constexpr uint16_t packetCharacteristicId {0x1532};
+      static constexpr uint16_t controlPointCharacteristicId {0x1531};
+      static constexpr uint16_t revisionCharacteristicId {0x1534};
+
+      static constexpr ble_uuid128_t serviceUuid {
+        .u {.type = BLE_UUID_TYPE_128},
+        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x30, 0x15, 0x00, 0x00}};
+
+      static constexpr ble_uuid128_t packetCharacteristicUuid {
+        .u {.type = BLE_UUID_TYPE_128},
+        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x32, 0x15, 0x00, 0x00}};
+
+      static constexpr ble_uuid128_t controlPointCharacteristicUuid {
+        .u {.type = BLE_UUID_TYPE_128},
+        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x31, 0x15, 0x00, 0x00}};
+
+      static constexpr ble_uuid128_t revisionCharacteristicUuid {
+        .u {.type = BLE_UUID_TYPE_128},
+        .value = {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x34, 0x15, 0x00, 0x00}};
+
+      struct ble_gatt_chr_def characteristicDefinition[4];
+      struct ble_gatt_svc_def serviceDefinition[2];
+
+      uint16_t revision {0x0008};
+      uint16_t packetCharacteristicHandle;
+      uint16_t controlPointCharacteristicHandle;
+      uint16_t revisionCharacteristicHandle;
+      uint16_t expectedCrc = 0;
+
       uint32_t nbPacketReceived = 0;
       uint32_t bytesReceived = 0;
 
       uint32_t softdeviceSize = 0;
       uint32_t bootloaderSize = 0;
       uint32_t applicationSize = 0;
-      uint16_t expectedCrc = 0;
 
-      int SendDfuRevision(os_mbuf* om) const;
-      int WritePacketHandler(uint16_t connectionHandle, os_mbuf* om);
-      int ControlPointHandler(uint16_t connectionHandle, os_mbuf* om);
+      States state = States::Idle;
+
+      uint8_t nbPacketsToNotify = 0;
 
       TimerHandle_t timeoutTimer;
     };

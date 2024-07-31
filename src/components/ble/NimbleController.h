@@ -50,10 +50,18 @@ namespace Pinetime {
                        HeartRateController& heartRateController,
                        MotionController& motionController,
                        FS& fs);
+
       void Init();
       void StartAdvertising();
-      int OnGAPEvent(ble_gap_event* event);
       void StartDiscovery();
+      void NotifyBatteryLevel(uint8_t level);
+      void RestartFastAdv() {
+        fastAdvCount = 0;
+      };
+      void EnableRadio();
+      void DisableRadio();
+
+      uint8_t OnGAPEvent(ble_gap_event* event);
 
       Pinetime::Controllers::MusicService& music() {
         return musicService;
@@ -72,14 +80,7 @@ namespace Pinetime {
       };
 
       uint16_t connHandle();
-      void NotifyBatteryLevel(uint8_t level);
 
-      void RestartFastAdv() {
-        fastAdvCount = 0;
-      };
-
-      void EnableRadio();
-      void DisableRadio();
 
     private:
       void PersistBond(struct ble_gap_conn_desc& desc);
@@ -109,9 +110,9 @@ namespace Pinetime {
       ServiceDiscovery serviceDiscovery;
 
       uint8_t addrType;
-      uint16_t connectionHandle = BLE_HS_CONN_HANDLE_NONE;
       uint8_t fastAdvCount = 0;
       uint8_t bondId[16] = {0};
+      uint16_t connectionHandle = BLE_HS_CONN_HANDLE_NONE;
 
       ble_uuid128_t dfuServiceUuid {
         .u {.type = BLE_UUID_TYPE_128},

@@ -421,7 +421,7 @@ void DisplayApp::LoadScreen(Apps app, DisplayApp::FullRefreshDirections directio
   switch (app) {
     case Apps::Launcher: {
       std::array<Screens::Tile::Applications, UserAppTypes::Count> apps;
-      int i = 0;
+      uint16_t i = 0;
       for (const auto& userApp : userApps) {
         apps[i++] = Screens::Tile::Applications {userApp.icon, userApp.app, true};
       }
@@ -490,7 +490,7 @@ void DisplayApp::LoadScreen(Apps app, DisplayApp::FullRefreshDirections directio
       break;
     case Apps::SettingWatchFace: {
       std::array<Screens::SettingWatchFace::Item, UserWatchFaceTypes::Count> items;
-      int i = 0;
+      uint16_t i = 0;
       for (const auto& userWatchFace : userWatchFaces) {
         items[i++] =
           Screens::SettingWatchFace::Item {userWatchFace.name, userWatchFace.watchFace, userWatchFace.isAvailable(controllers.filesystem)};

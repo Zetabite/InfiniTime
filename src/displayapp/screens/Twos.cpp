@@ -37,10 +37,10 @@ Twos::Twos() {
 
   lv_table_set_col_cnt(gridDisplay, nCols);
   lv_table_set_row_cnt(gridDisplay, nRows);
-  for (int col = 0; col < nCols; col++) {
-    static constexpr int colWidth = LV_HOR_RES_MAX / nCols;
+  for (int32_t col = 0; col < nCols; col++) {
+    static constexpr int32_t colWidth = LV_HOR_RES_MAX / nCols;
     lv_table_set_col_width(gridDisplay, col, colWidth);
-    for (int row = 0; row < nRows; row++) {
+    for (int32_t row = 0; row < nRows; row++) {
       grid[row][col].value = 0;
       lv_table_set_cell_type(gridDisplay, row, col, 1);
       lv_table_set_cell_align(gridDisplay, row, col, LV_LABEL_ALIGN_CENTER);
@@ -71,11 +71,11 @@ Twos::~Twos() {
 }
 
 bool Twos::placeNewTile() {
-  unsigned int emptyCells[nCells];
-  unsigned int nEmpty = 0;
-  for (unsigned int i = 0; i < nCells; i++) {
-    const unsigned int row = i / nCols;
-    const unsigned int col = i % nCols;
+  uint32_t emptyCells[nCells];
+  uint8_t nEmpty = 0;
+  for (uint8_t i = 0; i < nCells; i++) {
+    const uint8_t row = i / nCols;
+    const uint8_t col = i % nCols;
     if (grid[row][col].value == 0) {
       emptyCells[nEmpty] = i;
       nEmpty++;
@@ -86,7 +86,7 @@ bool Twos::placeNewTile() {
     return false; // game lost
   }
 
-  int random = rand() % nEmpty;
+  int32_t random = rand() % nEmpty;
 
   if ((rand() % 100) < 90) {
     grid[emptyCells[random] / nCols][emptyCells[random] % nCols].value = 2;
@@ -97,7 +97,7 @@ bool Twos::placeNewTile() {
   return true;
 }
 
-bool Twos::tryMerge(int newRow, int newCol, int oldRow, int oldCol) {
+bool Twos::tryMerge(int32_t newRow, int32_t newCol, int32_t oldRow, int32_t oldCol) {
   if (grid[newRow][newCol].value == grid[oldRow][oldCol].value) {
     if ((newCol != oldCol) || (newRow != oldRow)) {
       if (!grid[newRow][newCol].merged) {
@@ -113,7 +113,7 @@ bool Twos::tryMerge(int newRow, int newCol, int oldRow, int oldCol) {
   return false;
 }
 
-bool Twos::tryMove(int newRow, int newCol, int oldRow, int oldCol) {
+bool Twos::tryMove(int32_t newRow, int32_t newCol, int32_t oldRow, int32_t oldCol) {
   if (((newCol >= 0) && (newCol != oldCol)) || ((newRow >= 0) && (newRow != oldRow))) {
     grid[newRow][newCol].value = grid[oldRow][oldCol].value;
     grid[oldRow][oldCol].value = 0;
@@ -124,18 +124,18 @@ bool Twos::tryMove(int newRow, int newCol, int oldRow, int oldCol) {
 
 bool Twos::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
   bool validMove = false;
-  for (unsigned int i = 0; i < nCells; i++) {
-    const unsigned int row = i / nCols;
-    const unsigned int col = i % nCols;
+  for (uint8_t i = 0; i < nCells; i++) {
+    const uint8_t row = i / nCols;
+    const uint8_t col = i % nCols;
     grid[row][col].merged = false; // reinitialize merge state
   }
   switch (event) {
     case TouchEvents::SwipeLeft:
-      for (int col = 1; col < nCols; col++) { // ignore tiles already on far left
-        for (int row = 0; row < nRows; row++) {
+      for (uint8_t col = 1; col < nCols; col++) { // ignore tiles already on far left
+        for (uint8_t row = 0; row < nRows; row++) {
           if (grid[row][col].value > 0) {
-            int newCol = -1;
-            for (int potentialNewCol = col - 1; potentialNewCol >= 0; potentialNewCol--) {
+            int32_t newCol = -1;
+            for (int32_t potentialNewCol = col - 1; potentialNewCol >= 0; potentialNewCol--) {
               if (grid[row][potentialNewCol].value == 0) {
                 newCol = potentialNewCol;
               } else { // blocked by another tile
@@ -156,11 +156,11 @@ bool Twos::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
       }
       return true;
     case TouchEvents::SwipeRight:
-      for (int col = nCols - 2; col >= 0; col--) { // ignore tiles already on far right
-        for (int row = 0; row < nRows; row++) {
+      for (int32_t col = nCols - 2; col >= 0; col--) { // ignore tiles already on far right
+        for (int32_t row = 0; row < nRows; row++) {
           if (grid[row][col].value > 0) {
-            int newCol = -1;
-            for (int potentialNewCol = col + 1; potentialNewCol < nCols; potentialNewCol++) {
+            int32_t newCol = -1;
+            for (int32_t potentialNewCol = col + 1; potentialNewCol < nCols; potentialNewCol++) {
               if (grid[row][potentialNewCol].value == 0) {
                 newCol = potentialNewCol;
               } else { // blocked by another tile
@@ -181,11 +181,11 @@ bool Twos::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
       }
       return true;
     case TouchEvents::SwipeUp:
-      for (int row = 1; row < nRows; row++) { // ignore tiles already on top
-        for (int col = 0; col < nCols; col++) {
+      for (int32_t row = 1; row < nRows; row++) { // ignore tiles already on top
+        for (int32_t col = 0; col < nCols; col++) {
           if (grid[row][col].value > 0) {
-            int newRow = -1;
-            for (int potentialNewRow = row - 1; potentialNewRow >= 0; potentialNewRow--) {
+            int32_t newRow = -1;
+            for (int32_t potentialNewRow = row - 1; potentialNewRow >= 0; potentialNewRow--) {
               if (grid[potentialNewRow][col].value == 0) {
                 newRow = potentialNewRow;
               } else { // blocked by another tile
@@ -206,11 +206,11 @@ bool Twos::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
       }
       return true;
     case TouchEvents::SwipeDown:
-      for (int row = nRows - 2; row >= 0; row--) { // ignore tiles already on bottom
-        for (int col = 0; col < nCols; col++) {
+      for (int32_t row = nRows - 2; row >= 0; row--) { // ignore tiles already on bottom
+        for (int32_t col = 0; col < nCols; col++) {
           if (grid[row][col].value > 0) {
-            int newRow = -1;
-            for (int potentialNewRow = row + 1; potentialNewRow < nRows; potentialNewRow++) {
+            int32_t newRow = -1;
+            for (int32_t potentialNewRow = row + 1; potentialNewRow < nRows; potentialNewRow++) {
               if (grid[potentialNewRow][col].value == 0) {
                 newRow = potentialNewRow;
               } else { // blocked by another tile
@@ -237,9 +237,9 @@ bool Twos::OnTouchEvent(Pinetime::Applications::TouchEvents event) {
 }
 
 void Twos::updateGridDisplay() {
-  for (unsigned int i = 0; i < nCells; i++) {
-    const unsigned int row = i / nCols;
-    const unsigned int col = i % nCols;
+  for (uint8_t i = 0; i < nCells; i++) {
+    const uint8_t row = i / nCols;
+    const uint8_t col = i % nCols;
     if (grid[row][col].value > 0) {
       char buffer[7];
       snprintf(buffer, sizeof(buffer), "%u", grid[row][col].value);

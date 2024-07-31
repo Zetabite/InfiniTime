@@ -48,5 +48,21 @@ Testing/Temporary/
 src/nRF5_SDK_15.3.0_59ac345
 src/arm-none-eabi
 
+src/pinetime-mcuboot-app-dfu-*.zip
+src/resources/infinitime-resources-*.zip
+src/resources/resources.json
+
+src/displayapp/fonts/*.c
+
+src/displayapp/apps/Apps.h
+!src/displayapp/apps/Apps.h.in
+
 # clangd
 .cache/
+
+
+node_modules/
+package.json
+package-lock.json
+post_build.sh
+compile_commands.json

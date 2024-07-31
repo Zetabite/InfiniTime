@@ -29,8 +29,6 @@ namespace Pinetime {
         Controllers::MotionController& motionController;
         Controllers::Settings& settingsController;
 
-        uint32_t currentTripSteps = 0;
-
         lv_obj_t* lSteps;
         lv_obj_t* stepsArc;
         lv_obj_t* resetBtn;
